@@ -5,7 +5,6 @@ from rag_core.qdrant_db import QdrantDB
 from rag_core.rag_utils import prepare_context_chunks, build_gpt_prompt, summarize_session_history
 from pathlib import Path
 import openai
-import uuid
 
 st.set_page_config(page_title="Studienbot", layout="wide")
 
@@ -63,11 +62,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ======= Secrets und Setup =======
-OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-AZURE_BLOB_CONN_STR = st.secrets["AZURE_BLOB_CONN_STR"]
-AZURE_CONTAINER = st.secrets["AZURE_CONTAINER"]
-QDRANT_HOST = st.secrets["QDRANT_HOST"]
-QDRANT_API_KEY = st.secrets["QDRANT_API_KEY"]
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY")
+AZURE_BLOB_CONN_STR = st.secrets.get("AZURE_BLOB_CONN_STR")
+AZURE_CONTAINER = st.secrets.get("AZURE_CONTAINER")
+QDRANT_HOST = st.secrets.get("QDRANT_HOST")
+QDRANT_API_KEY = st.secrets.get("QDRANT_API_KEY")
+
+if not all([OPENAI_API_KEY, AZURE_BLOB_CONN_STR, AZURE_CONTAINER, QDRANT_HOST, QDRANT_API_KEY]):
+    st.error("❌ Fehlende API-Zugänge oder Secrets. Bitte in Streamlit Cloud konfigurieren.")
+    st.stop()
 
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 pdf_processor = PDFProcessor()
@@ -109,23 +112,23 @@ with st.expander("📂 Neue PDFs prüfen & laden"):
             st.info("Keine neuen PDFs gefunden.")
 
 # ======= Chatverlauf und Eingabe =======
-
-if st.session_state.active_session and st.session_state.active_session in st.session_state.sessions:
-    for eintrag in st.session_state.sessions[st.session_state.active_session]:
+aktive_session = st.session_state.active_session
+if aktive_session and aktive_session in st.session_state.sessions:
+    for eintrag in st.session_state.sessions[aktive_session]:
         st.markdown(f"<div class='chat-bubble user-bubble'><strong>🧑 Frage:</strong><br>{eintrag['frage']}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='chat-bubble'><strong>🤖 Antwort:</strong><br>{eintrag['antwort']}</div>", unsafe_allow_html=True)
 
 frage = st.text_input("", placeholder="Stelle deine Frage zur FHDW oder zu Dokumenten...")
 if st.button("📤 Anfrage senden") and frage:
-    if not st.session_state.active_session:
+    if not aktive_session:
         title = frage.strip()[:50]
         st.session_state.sessions[title] = []
         st.session_state.active_session = title
+        aktive_session = title
 
-    session_key = st.session_state.active_session
     resultate = db.query(frage, n=30)
     kontext = prepare_context_chunks(resultate)
-    verlauf = st.session_state.sessions[session_key]
+    verlauf = st.session_state.sessions[aktive_session]
 
     verlaufszusammenfassung = summarize_session_history(
         verlauf, max_tokens=800, model="gpt-4o-mini", api_key=OPENAI_API_KEY
@@ -140,10 +143,8 @@ if st.button("📤 Anfrage senden") and frage:
     )
     antwort = response.choices[0].message.content
 
-    st.session_state.sessions[session_key].append({"frage": frage, "antwort": antwort})
+    st.session_state.sessions[aktive_session].append({"frage": frage, "antwort": antwort})
     st.rerun()
-
-# ======= Ende =======
 
 
 
