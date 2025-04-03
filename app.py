@@ -151,7 +151,7 @@ def frage_eingabe():
 
     col1, col2 = st.columns([6, 1])
     with col1:
-        frage = st.text_input("Deine Frage:", value=frage_vorbelegt, placeholder="Stelle irgendeine Frage", key="frage_input", label_visibility="collapsed")
+        frage = st.text_input("Deine Frage:", value=frage_vorbelegt, placeholder="Stelle eine Frage...", key="frage_input", label_visibility="collapsed")
     with col2:
         abgeschickt = st.button("➤", use_container_width=True)
 
