@@ -68,6 +68,42 @@ div[data-testid="stAlert"] {
     border: 1px solid #dbe2e8;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
+.stMarkdown {
+    background-color: #ffffff;
+    padding: 1.2rem;
+    border-radius: 6px;
+    border: 1px solid #dbe2e8;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* Ergänzung: weitere UI-Elemente */
+.st-expander {
+    border: 1px solid #ccd6e0;
+    border-radius: 6px;
+    background-color: #ffffff;
+}
+.st-expanderHeader {
+    font-weight: 600;
+    background-color: #f9fbff;
+}
+
+.stTextInput input {
+    background-color: #f9f9f9 !important;
+    border: 1px solid #ccc !important;
+    padding: 0.6rem !important;
+    border-radius: 6px !important;
+    color: #002b5c !important;
+}
+
+div.stButton > button {
+    background-color: #002b5c !important;
+    color: white !important;
+    font-weight: 600;
+    border-radius: 6px !important;
+    padding: 0.6rem 1.5rem !important;
+    font-size: 1rem;
+}
+
 </style>
 """
 
