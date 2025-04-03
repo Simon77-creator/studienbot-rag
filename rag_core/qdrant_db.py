@@ -1,5 +1,3 @@
-# rag_core/qdrant_db.py
-
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
 import openai
@@ -26,7 +24,7 @@ class QdrantDB:
     def embed_text(self, text: str):
         client = openai.OpenAI(api_key=self.api_key)
         response = client.embeddings.create(
-            model="text-embedding-3-small",
+            model="text-embedding-3-small",  # bleibt gleich
             input=text
         )
         return response.data[0].embedding
@@ -60,4 +58,12 @@ class QdrantDB:
             "page": hit.payload["page"],
             "score": hit.score
         } for hit in hits]
+
+    def get_stored_sources(self):
+        result, _ = self.client.scroll(
+            collection_name=self.collection,
+            limit=10000,
+            with_payload=True
+        )
+        return set(p.payload["source"] for p in result if "source" in p.payload)
 

@@ -1,8 +1,5 @@
-
-# rag_core/rag_utils.py
 from collections import defaultdict
 import tiktoken
-import openai
 
 def prepare_context_chunks(resultate, max_tokens=6500, max_chunk_length=2000, max_per_source=4, allow_duplicates=False):
     seen_texts = set()

@@ -1,5 +1,3 @@
-
-# rag_core/azure_loader.py
 from azure.storage.blob import BlobServiceClient
 from pathlib import Path
 

@@ -1,5 +1,3 @@
-
-# rag_core/pdf_processor.py
 import fitz
 import pdfplumber
 import os
