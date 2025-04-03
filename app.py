@@ -8,6 +8,32 @@ import openai
 
 st.set_page_config(page_title="📘 Studienbot RAG", layout="wide")
 st.title("📘 Studienbot: Frage deine Studienunterlagen")
+# FHDW Style
+fhdw_css = """
+<style>
+body {
+    background-color: #ffffff;
+    color: #002b5c;
+}
+h1, h2, h3 {
+    color: #002b5c !important;
+}
+button[kind="primary"] {
+    background-color: #002b5c !important;
+    color: white !important;
+    border-radius: 4px;
+}
+div[data-testid="stSidebar"] {
+    background-color: #f0f2f6;
+}
+input, textarea {
+    border-radius: 6px !important;
+    border: 1px solid #ccc !important;
+}
+</style>
+"""
+
+st.markdown(fhdw_css, unsafe_allow_html=True)
 
 # 🔐 Secrets laden
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
