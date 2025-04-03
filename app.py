@@ -139,7 +139,7 @@ render_sidebar()
 
 # ====== HEADLINE ======
 if st.session_state.initial_input:
-    st.title("📘 Studienbot – Wie kann ich dir helfen")
+    st.title("📘 Studienbot – Frag deine Dokumente")
 
 # ====== FRAGE-EINGABE ======
 def frage_eingabe():
@@ -155,10 +155,10 @@ def frage_eingabe():
     with col2:
         abgeschickt = st.button("➤", use_container_width=True)
 
-    return frage, abgeschickt
+    return frage, abgeschickt, frage_vorbelegt
 
 # ====== ANTWORT-LOGIK ======
-def handle_frage(frage, abgeschickt):
+def handle_frage(frage, abgeschickt, frage_vorbelegt):
     if frage and (abgeschickt or frage_vorbelegt):
         if not st.session_state.active_session:
             title = frage.strip()[:50]
@@ -203,8 +203,7 @@ def render_chatverlauf():
             st.markdown(f"<div style='text-align: left;'><div class='chat-left'>{eintrag['antwort']}</div></div>", unsafe_allow_html=True)
 
 render_chatverlauf()
-frage, abgeschickt = frage_eingabe()
-handle_frage(frage, abgeschickt)
-
+frage, abgeschickt, frage_vorbelegt = frage_eingabe()
+handle_frage(frage, abgeschickt, frage_vorbelegt)
 
 
