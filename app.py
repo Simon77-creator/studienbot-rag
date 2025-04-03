@@ -140,7 +140,7 @@ render_sidebar()
 
 # ====== HEADLINE ======
 if st.session_state.initial_input:
-    st.title("📘 Studienbot – Frag deine Dokumente")
+    st.title("📘 Wie kann ich dir helfen ?")
 
 # ====== FRAGE-EINGABE ======
 def frage_eingabe():
