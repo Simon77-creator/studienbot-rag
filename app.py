@@ -9,40 +9,65 @@ import uuid
 
 st.set_page_config(page_title="Studienbot", layout="wide")
 
-# FHDW-Styling
+# 🎨 FHDW-inspiriertes dunkles Design
 fhdw_css = """
 <style>
-html, body, [class*="css"] {
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    background-color: #f0f2f6;
-    color: #002b5c;
+html, body, [class*="css"]  {
+    background-color: #0f1117;
+    color: #f0f4fc;
+    font-family: 'Segoe UI', sans-serif;
 }
 h1 {
-    font-size: 2.2rem;
+    color: #ffffff;
     font-weight: 800;
-    border-bottom: 3px solid #002b5c;
+    font-size: 2.2rem;
     padding-bottom: 0.5rem;
+    border-bottom: 3px solid #004080;
     margin-bottom: 1.5rem;
 }
 .stButton > button {
-    background-color: #002b5c;
+    background-color: #004080;
     color: white;
     font-weight: 600;
-    padding: 0.6em 1.5em;
-    border-radius: 4px;
+    padding: 0.5rem 1.5rem;
     border: none;
+    border-radius: 5px;
     transition: all 0.2s ease-in-out;
 }
 .stButton > button:hover {
-    background-color: #003c85;
+    background-color: #0059b3;
     transform: scale(1.02);
 }
+input, textarea, .stTextInput, .stTextArea {
+    background-color: #1c1f26 !important;
+    color: #f0f4fc !important;
+    border: 1px solid #004080 !important;
+    border-radius: 4px !important;
+}
+details {
+    background-color: #1c1f26;
+    color: white;
+    border: 1px solid #004080;
+    border-radius: 5px;
+    padding: 0.4rem;
+}
 .stMarkdown {
-    background-color: #ffffff;
-    padding: 1.2rem;
+    background-color: #14161c;
+    color: #e0ecff;
+    border-left: 4px solid #004080;
+    padding: 1rem;
+    margin-top: 1rem;
     border-radius: 6px;
-    border: 1px solid #dbe2e8;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+[data-testid="stAlert"] {
+    background-color: #182030;
+    border-left: 6px solid #0077cc;
+    color: #f0f4fc;
+}
+hr {
+    border: none;
+    border-top: 1px solid #2a2e39;
+    margin: 1.5rem 0;
 }
 </style>
 """
@@ -57,53 +82,53 @@ AZURE_CONTAINER = st.secrets["AZURE_CONTAINER"]
 QDRANT_HOST = st.secrets["QDRANT_HOST"]
 QDRANT_API_KEY = st.secrets["QDRANT_API_KEY"]
 
-# 🔧 Services initialisieren
+# 🔧 Services
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 pdf_processor = PDFProcessor()
 db = QdrantDB(api_key=OPENAI_API_KEY, host=QDRANT_HOST, qdrant_api_key=QDRANT_API_KEY)
 
-# 🧠 Session-Handling wie bei ChatGPT
-st.sidebar.title("👤 Deine Sessions")
+# 💬 Session Management
+st.sidebar.title("🗂️ Deine Sessions")
 if "sessions" not in st.session_state:
     st.session_state.sessions = {}
     st.session_state.active_session = None
 
 session_names = list(st.session_state.sessions.keys())
-selected = st.sidebar.selectbox("Wähle eine Session", session_names + ["➕ Neue starten"])
+selected = st.sidebar.selectbox("Session auswählen", session_names + ["➕ Neue starten"])
 
 if selected == "➕ Neue starten":
     st.session_state.active_session = None
 else:
     st.session_state.active_session = selected
 
-# 📂 PDF Check
+# 📂 PDF-Upload Expander
 with st.expander("📂 Neue PDFs prüfen und laden"):
     if st.button("🔄 Jetzt nach neuen PDFs suchen"):
-        with st.spinner("📥 Prüfe Azure auf neue PDFs..."):
+        with st.spinner("📥 Lade PDFs aus Azure..."):
             pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
             stored_sources = db.get_stored_sources()
             new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
 
         if new_pdfs and st.button(f"🚀 {len(new_pdfs)} neue PDFs verarbeiten"):
-            with st.spinner("⚙️ Verarbeite neue PDFs..."):
+            with st.spinner("⚙️ Verarbeite PDFs..."):
                 all_chunks = []
                 for path in new_pdfs:
                     chunks = pdf_processor.extract_text_chunks(path)
                     all_chunks.extend(chunks)
                 db.add(all_chunks)
-                st.success(f"✅ {len(all_chunks)} neue Abschnitte gespeichert.")
+                st.success(f"✅ {len(all_chunks)} Abschnitte gespeichert.")
         else:
-            st.info("✅ Keine neuen PDFs gefunden.")
+            st.info("✅ Keine neuen PDFs vorhanden.")
 
-# ❓ Nutzerfrage stellen
+# ❓ Frage stellen
 frage = st.text_input("❓ Deine Frage:", placeholder="Was möchtest du wissen?")
 fragen_knopf = st.button("📤 Anfrage senden")
 
 if frage and fragen_knopf:
     if not st.session_state.active_session:
-        session_title = frage.strip()[:50]
-        st.session_state.sessions[session_title] = []
-        st.session_state.active_session = session_title
+        title = frage.strip()[:50]
+        st.session_state.sessions[title] = []
+        st.session_state.active_session = title
 
     session_key = st.session_state.active_session
     with st.spinner("🧠 Studienbot denkt nach..."):
@@ -124,13 +149,9 @@ if frage and fragen_knopf:
         )
         antwort = response.choices[0].message.content
         st.markdown(antwort)
+        st.session_state.sessions[session_key].append({"frage": frage, "antwort": antwort})
 
-        st.session_state.sessions[session_key].append({
-            "frage": frage,
-            "antwort": antwort
-        })
-
-# 🕘 Verlauf anzeigen
+# 📜 Verlauf anzeigen
 if st.session_state.active_session and st.checkbox("🕘 Verlauf anzeigen"):
     st.markdown(f"### Verlauf: **{st.session_state.active_session}**")
     for eintrag in reversed(st.session_state.sessions[st.session_state.active_session]):
