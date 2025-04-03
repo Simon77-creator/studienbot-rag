@@ -61,8 +61,16 @@ div[data-testid="stAlert"] {
     border: 1px solid #dbe2e8;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
+.stMarkdown {
+    background-color: #ffffff;
+    padding: 1.2rem;
+    border-radius: 6px;
+    border: 1px solid #dbe2e8;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
 </style>
 """
+
 st.markdown(fhdw_css, unsafe_allow_html=True)
 
 st.title("📘 Studienbot – Frage deine Unterlagen")
