@@ -19,20 +19,20 @@ openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 pdf_processor = PDFProcessor()
 db = QdrantDB(api_key=OPENAI_API_KEY, host=QDRANT_HOST, qdrant_api_key=QDRANT_API_KEY)
 
-if new_pdfs:
-    with st.expander("🔐 Admin-Bereich: Neue PDFs erkennen und laden"):
-        if st.checkbox("⚙️ Admin-Modus aktivieren"):
-            if st.button(f"🚀 {len(new_pdfs)} neue PDFs verarbeiten"):
-                with st.spinner("🔄 Verarbeite neue PDFs..."):
-                    all_chunks = []
-                    for path in new_pdfs:
-                        chunks = pdf_processor.extract_text_chunks(path)
-                        all_chunks.extend(chunks)
-                    db.add(all_chunks)
-                    st.success(f"{len(all_chunks)} neue Abschnitte gespeichert.")
-else:
-    st.info("✅ Keine neuen PDFs gefunden – alles aktuell.")
-
+if st.button("🔄 PDFs aus Azure laden & verarbeiten"):
+    with st.spinner("Lade PDFs aus Azure Blob Storage..."):
+        pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
+        stored_sources = db.get_stored_sources()
+        new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
+        if not new_pdfs:
+            st.info("✅ Alle PDFs wurden bereits verarbeitet.")
+        else:
+            all_chunks = []
+            for path in new_pdfs:
+                chunks = pdf_processor.extract_text_chunks(path)
+                all_chunks.extend(chunks)
+            db.add(all_chunks)
+            st.success(f"{len(all_chunks)} neue Abschnitte gespeichert.")
 
 frage = st.text_input("❓ Deine Frage:", placeholder="Was steht zur Praxisphase in den Dokumenten?")
 
