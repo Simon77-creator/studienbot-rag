@@ -109,6 +109,7 @@ db = QdrantDB(api_key=st.secrets["OPENAI_API_KEY"], host=st.secrets["QDRANT_HOST
 # ====== SIDEBAR ======
 def render_sidebar():
     st.sidebar.markdown("<div class='sidebar-title'>📘 Studienbot</div>", unsafe_allow_html=True)
+    st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/1/1b/FHDW_logo_201x60.png", width=150)
 
     with st.sidebar.expander("📂 Sitzungen verwalten"):
         session_names = list(st.session_state.sessions.keys())
@@ -140,7 +141,7 @@ render_sidebar()
 
 # ====== HEADLINE ======
 if st.session_state.initial_input:
-    st.title("📘 Wie kann ich dir helfen ?")
+    st.title("📘 Wie kann ich dir helfen?")
 
 # ====== FRAGE-EINGABE ======
 def frage_eingabe():
@@ -206,5 +207,4 @@ def render_chatverlauf():
 render_chatverlauf()
 frage, abgeschickt, frage_vorbelegt = frage_eingabe()
 handle_frage(frage, abgeschickt, frage_vorbelegt)
-
 
