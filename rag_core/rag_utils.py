@@ -1,7 +1,7 @@
 import tiktoken
 import openai
 
-def prepare_context_chunks(resultate, max_tokens=6500, max_chunk_length=2000, max_per_source=4, allow_duplicates=False):
+def prepare_context_chunks(resultate, max_tokens=8000, max_chunk_length=2000, max_per_source=5, allow_duplicates=False):
     seen_texts = set()
     if resultate and "score" in resultate[0]:
         resultate = sorted(resultate, key=lambda x: x["score"])
@@ -70,6 +70,6 @@ def summarize_session_history(history, max_tokens=800, model="gpt-4o-mini", api_
             {"role": "user", "content": prompt}
         ],
         temperature=0.2,
-        max_tokens=300
+        max_tokens=400
     )
     return res.choices[0].message.content.strip()
