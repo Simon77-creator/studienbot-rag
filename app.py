@@ -12,47 +12,49 @@ st.set_page_config(page_title="Studienbot", layout="wide")
 st.markdown("""
 <style>
 html, body, [class*="css"]  {
-    background-color: #0f1117 !important;
-    color: #ffffff;
+    background-color: #0f172a;
+    color: #e2e8f0;
     font-family: 'Segoe UI', sans-serif;
 }
-.block-container {
-    padding: 2rem 3rem;
-    max-width: 900px;
-    margin: auto;
-}
-.stTextInput input, .stSelectbox select {
+.block-container { padding: 2rem 3rem; }
+.stTextInput input {
     border-radius: 6px;
-    padding: 0.5rem;
-    background-color: #1e2130;
+    background-color: #1e293b;
     color: white;
+    border: none;
+    padding: 0.75rem;
+    width: 100%;
 }
-.chat-bubble {
+.user-bubble, .bot-bubble {
+    max-width: 70%;
     padding: 1rem;
-    border-radius: 10px;
-    margin-bottom: 1rem;
-    display: inline-block;
-    max-width: 80%;
+    margin: 0.5rem;
+    border-radius: 12px;
     word-wrap: break-word;
+    font-size: 1.05rem;
 }
 .user-bubble {
-    background-color: #263349;
+    background-color: #1e293b;
     color: white;
     margin-left: auto;
     text-align: right;
-    border-right: 4px solid #0066cc;
 }
 .bot-bubble {
-    background-color: #1c2a44;
+    background-color: #1e40af;
     color: white;
     margin-right: auto;
     text-align: left;
-    border-left: 4px solid #0066cc;
+}
+.description {
+    color: #94a3b8;
+    font-size: 1rem;
+    margin-top: -1rem;
+    margin-bottom: 2rem;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Secrets
+# Secrets laden
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY")
 AZURE_BLOB_CONN_STR = st.secrets.get("AZURE_BLOB_CONN_STR")
 AZURE_CONTAINER = st.secrets.get("AZURE_CONTAINER")
@@ -105,18 +107,19 @@ with st.sidebar.expander("⚙️ Einstellungen"):
 st.title("📘 Studienbot – Frag deine Dokumente")
 aktive_session = st.session_state.active_session
 if aktive_session and aktive_session in st.session_state.sessions:
-    if len(st.session_state.sessions[aktive_session]) == 0:
-        st.markdown("<p style='color:#ccc;font-size:1.05rem;'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</p>", unsafe_allow_html=True)
-    for eintrag in st.session_state.sessions[aktive_session]:
-        st.markdown(f"<div class='chat-bubble user-bubble'>{eintrag['frage']}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='chat-bubble bot-bubble'>{eintrag['antwort']}</div>", unsafe_allow_html=True)
+    verlauf = st.session_state.sessions[aktive_session]
+    for eintrag in verlauf:
+        st.markdown(f"<div class='user-bubble'>{eintrag['frage']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='bot-bubble'>{eintrag['antwort']}</div>", unsafe_allow_html=True)
+else:
+    st.markdown("<div class='description'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</div>", unsafe_allow_html=True)
 
-# Chat Input
-frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?", label_visibility="collapsed")
-abschicken = frage and st.session_state.get("letzte_frage") != frage
+# Eingabe
+with st.form(key="frage_form"):
+    frage = st.text_input("Deine Frage:", key="frage_eingabe", label_visibility="collapsed")
+    submitted = st.form_submit_button("▶", use_container_width=True)
 
-if abschicken:
-    st.session_state["letzte_frage"] = frage
+if submitted and frage:
     if not aktive_session:
         title = frage.strip()[:50]
         st.session_state.sessions[title] = []
@@ -131,15 +134,15 @@ if abschicken:
         verlauf, max_tokens=800, model="gpt-4o-mini", api_key=OPENAI_API_KEY
     )
 
-    with st.spinner("Antwort wird generiert..."):
-        messages = build_gpt_prompt(kontext, frage, verlaufszusammenfassung)
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            temperature=0.3,
-            max_tokens=1500
-        )
-        antwort = response.choices[0].message.content
+    messages = build_gpt_prompt(kontext, frage, verlaufszusammenfassung)
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages,
+        temperature=0.3,
+        max_tokens=1500
+    )
+    antwort = response.choices[0].message.content
 
     st.session_state.sessions[aktive_session].append({"frage": frage, "antwort": antwort})
+    st.session_state["frage_eingabe"] = ""
     st.rerun()
