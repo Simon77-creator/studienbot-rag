@@ -8,7 +8,7 @@ import openai
 
 st.set_page_config(page_title="Studienbot", layout="centered")
 
-# Style: ChatGPT-Look
+# ====== Style: ChatGPT-Vibes ======
 st.markdown("""
 <style>
 html, body, [class*="css"]  {
@@ -54,7 +54,7 @@ button[kind="primary"] {
 </style>
 """, unsafe_allow_html=True)
 
-# Secrets
+# ====== Secrets ======
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY")
 AZURE_BLOB_CONN_STR = st.secrets.get("AZURE_BLOB_CONN_STR")
 AZURE_CONTAINER = st.secrets.get("AZURE_CONTAINER")
@@ -69,13 +69,16 @@ openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 pdf_processor = PDFProcessor()
 db = QdrantDB(api_key=OPENAI_API_KEY, host=QDRANT_HOST, qdrant_api_key=QDRANT_API_KEY)
 
-# Sidebar
-st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/1/1b/FHDW_logo_201x60.png", width=150)
-
+# ====== Init SessionState ======
 if "sessions" not in st.session_state:
     st.session_state.sessions = {}
     st.session_state.active_session = None
     st.session_state.initial_input = True
+if "frage_input_clear" not in st.session_state:
+    st.session_state.frage_input_clear = False
+
+# ====== Sidebar ======
+st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/1/1b/FHDW_logo_201x60.png", width=150)
 
 with st.sidebar.expander("📂 Sitzungen verwalten"):
     session_names = list(st.session_state.sessions.keys())
@@ -105,7 +108,7 @@ with st.sidebar.expander("⚙️ Einstellungen"):
 
 aktive_session = st.session_state.active_session
 
-# Titel und Info nur bei erstem Start
+# ====== Headline ======
 if st.session_state.initial_input:
     st.title("📘 Studienbot – Frag deine Dokumente")
     st.markdown("""
@@ -117,18 +120,25 @@ if st.session_state.initial_input:
 elif aktive_session:
     st.markdown(f"### 📁 {aktive_session}  | 🤖 Modell: gpt-4o-mini")
 
-# Chatverlauf
+# ====== Chatverlauf ======
 if aktive_session and aktive_session in st.session_state.sessions:
     for eintrag in st.session_state.sessions[aktive_session]:
         st.markdown(f"<div class='chat-container'><div class='chat-right'>{eintrag['frage']}</div></div>", unsafe_allow_html=True)
         st.markdown(f"<div class='chat-container'><div class='chat-left'>{eintrag['antwort']}</div></div>", unsafe_allow_html=True)
 
-# Eingabefeld + Button
-frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?", key="frage_input", label_visibility="collapsed")
+# ====== Frage-Eingabe vorbereiten ======
+if st.session_state.frage_input_clear:
+    frage_vorbelegt = ""
+    st.session_state.frage_input_clear = False
+else:
+    frage_vorbelegt = st.session_state.get("frage_input", "")
+
+# ====== Eingabe UI ======
+frage = st.text_input("Deine Frage:", value=frage_vorbelegt, placeholder="Was möchtest du wissen?", key="frage_input", label_visibility="collapsed")
 abgeschickt = st.button("➤", use_container_width=True)
 
-# Auch Senden per Enter möglich (durch Textinput + Button-Kombi in Streamlit handled)
-if frage and (abgeschickt or st.session_state.get("frage_input")):
+# ====== Senden (Enter ODER Button) ======
+if frage and (abgeschickt or frage_vorbelegt):
     if not aktive_session:
         title = frage.strip()[:50]
         st.session_state.sessions[title] = []
@@ -155,7 +165,7 @@ if frage and (abgeschickt or st.session_state.get("frage_input")):
     antwort = response.choices[0].message.content
 
     st.session_state.sessions[aktive_session].append({"frage": frage, "antwort": antwort})
-    st.session_state.frage_input = ""
+    st.session_state.frage_input_clear = True
     st.rerun()
 
 
