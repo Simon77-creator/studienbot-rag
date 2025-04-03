@@ -8,33 +8,33 @@ import openai
 
 st.set_page_config(page_title="Studienbot", layout="wide")
 
-# Helles Theme erzwungen (auch bei Darkmode)
+# Style
 st.markdown("""
-    <style>
-    html, body, [class*="css"]  {
-        background-color: #ffffff !important;
-        color: #002b5c;
-        font-family: 'Segoe UI', sans-serif;
-    }
-    .block-container { padding: 2rem 3rem; }
-    .stTextInput input, .stSelectbox select, .stButton button {
-        border-radius: 6px;
-    }
-    .chat-bubble {
-        background-color: #f1f5f9;
-        padding: 1rem;
-        border-radius: 10px;
-        margin-bottom: 1rem;
-        border-left: 4px solid #004080;
-    }
-    .user-bubble {
-        background-color: #e4edf7;
-        border-left-color: #0077cc;
-    }
-    </style>
+<style>
+html, body, [class*="css"]  {
+    background-color: #ffffff !important;
+    color: #002b5c;
+    font-family: 'Segoe UI', sans-serif;
+}
+.block-container { padding: 2rem 3rem; }
+.stTextInput input, .stSelectbox select, .stButton button {
+    border-radius: 6px;
+}
+.chat-bubble {
+    background-color: #f1f5f9;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    border-left: 4px solid #004080;
+}
+.user-bubble {
+    background-color: #e4edf7;
+    border-left-color: #0077cc;
+}
+</style>
 """, unsafe_allow_html=True)
 
-# Secrets laden
+# Secrets
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY")
 AZURE_BLOB_CONN_STR = st.secrets.get("AZURE_BLOB_CONN_STR")
 AZURE_CONTAINER = st.secrets.get("AZURE_CONTAINER")
@@ -64,25 +64,26 @@ if selected == "➕ Neue starten":
 else:
     st.session_state.active_session = selected
 
-# Einstellungen aufklappbar
+# Einstellungen (nur wenn aufgeklappt PDF laden sichtbar)
 st.sidebar.subheader("⚙️ Einstellungen")
-if st.sidebar.checkbox("📥 PDF-Verwaltung anzeigen"):
-    if st.sidebar.button("🔄 Neue PDFs laden"):
-        with st.spinner("Lade PDFs von Azure..."):
-            pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
-            stored_sources = db.get_stored_sources()
-            new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
+if st.sidebar.checkbox("🔧 Optionen anzeigen"):
+    with st.sidebar.expander("📥 PDF-Import aus Azure Blob"):
+        if st.button("🔄 Neue PDFs laden"):
+            with st.spinner("Lade PDFs von Azure..."):
+                pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
+                stored_sources = db.get_stored_sources()
+                new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
 
-        if new_pdfs:
-            with st.spinner("Verarbeite PDFs..."):
-                all_chunks = []
-                for path in new_pdfs:
-                    chunks = pdf_processor.extract_text_chunks(path)
-                    all_chunks.extend(chunks)
-                db.add(all_chunks)
-                st.sidebar.success(f"✅ {len(all_chunks)} neue Chunks gespeichert.")
-        else:
-            st.sidebar.info("📁 Keine neuen PDFs gefunden.")
+            if new_pdfs:
+                with st.spinner("Verarbeite PDFs..."):
+                    all_chunks = []
+                    for path in new_pdfs:
+                        chunks = pdf_processor.extract_text_chunks(path)
+                        all_chunks.extend(chunks)
+                    db.add(all_chunks)
+                    st.success(f"✅ {len(all_chunks)} neue Chunks gespeichert.")
+            else:
+                st.info("📁 Keine neuen PDFs gefunden.")
 
 # Hauptbereich
 st.title("📘 Studienbot – Frag deine Dokumente")
@@ -127,6 +128,7 @@ if abschicken and frage:
 
     st.session_state.sessions[aktive_session].append({"frage": frage, "antwort": antwort})
     st.rerun()
+
 
 
 
