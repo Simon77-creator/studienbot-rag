@@ -5,6 +5,7 @@ from rag_core.qdrant_db import QdrantDB
 from rag_core.rag_utils import prepare_context_chunks, build_gpt_prompt, summarize_session_history
 from pathlib import Path
 import openai
+import time
 
 st.set_page_config(page_title="Studienbot", layout="centered")
 
@@ -26,7 +27,7 @@ html, body, [class*="css"]  {
     border-radius: 10px;
     margin-bottom: 1rem;
     display: inline-block;
-    max-width: 80%;
+    max-width: 90%;
     word-wrap: break-word;
 }
 .chat-left {
@@ -52,6 +53,20 @@ button[kind="primary"] {
     border-radius: 8px !important;
     padding: 0.6rem 1.2rem !important;
 }
+.loading-bubble {
+    background-color: #1e293b;
+    padding: 1rem;
+    border-radius: 10px;
+    border-left: 4px solid #2563eb;
+    max-width: 90%;
+    display: inline-block;
+    animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0% { opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -76,8 +91,11 @@ if "sessions" not in st.session_state:
     st.session_state.initial_input = True
 if "frage_input_clear" not in st.session_state:
     st.session_state.frage_input_clear = False
+if "first_prompt_done" not in st.session_state:
+    st.session_state.first_prompt_done = False
 
 # ====== SIDEBAR ======
+st.sidebar.markdown("## 📘 Studienbot", unsafe_allow_html=True)
 st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/1/1b/FHDW_logo_201x60.png", width=150)
 
 with st.sidebar.expander("📂 Sitzungen verwalten"):
@@ -110,21 +128,7 @@ aktive_session = st.session_state.active_session
 
 # ====== HEADLINE ======
 if st.session_state.initial_input:
-    st.title("📘 Studienbot – Frag deine Dokumente")
-    st.markdown("""
-    <p style='color:#94a3b8; font-weight:500;'>
-        Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen.
-        Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.
-    </p>
-    """, unsafe_allow_html=True)
-elif aktive_session:
-    st.markdown(f"### 📁 {aktive_session}  | 🤖 Modell: gpt-4o-mini")
-
-# ====== CHATVERLAUF ======
-if aktive_session and aktive_session in st.session_state.sessions:
-    for eintrag in st.session_state.sessions[aktive_session]:
-        st.markdown(f"<div class='chat-container'><div class='chat-right'>{eintrag['frage']}</div></div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='chat-container'><div class='chat-left'>{eintrag['antwort']}</div></div>", unsafe_allow_html=True)
+    st.title("Wie kann ich dir helfen?")
 
 # ====== FRAGE-EINGABE ======
 if st.session_state.frage_input_clear:
@@ -135,11 +139,11 @@ else:
 
 col1, col2 = st.columns([6, 1])
 with col1:
-    frage = st.text_input("Deine Frage:", value=frage_vorbelegt, placeholder="Was möchtest du wissen?", key="frage_input", label_visibility="collapsed")
+    frage = st.text_input("Deine Frage:", value=frage_vorbelegt, placeholder="Stelle irgendeine Frage", key="frage_input", label_visibility="collapsed")
 with col2:
     abgeschickt = st.button("➤", use_container_width=True)
 
-# ====== SENDEN & RAG FLOW ======
+# ====== ANTWORT-LOGIK ======
 if frage and (abgeschickt or frage_vorbelegt):
     if not aktive_session:
         title = frage.strip()[:50]
@@ -148,6 +152,10 @@ if frage and (abgeschickt or frage_vorbelegt):
         aktive_session = title
 
     st.session_state.initial_input = False
+
+    container = st.empty()
+    with container:
+        st.markdown("<div class='loading-bubble'>\u2022 \u2022 \u2022</div>", unsafe_allow_html=True)
 
     resultate = db.query(frage, n=30)
     kontext = prepare_context_chunks(resultate)
@@ -166,8 +174,24 @@ if frage and (abgeschickt or frage_vorbelegt):
     )
     antwort = response.choices[0].message.content
 
+    container.empty()  # remove loading
     st.session_state.sessions[aktive_session].append({"frage": frage, "antwort": antwort})
     st.session_state.frage_input_clear = True
+    st.session_state.first_prompt_done = True
     st.rerun()
+
+# ====== CHATVERLAUF ======
+if aktive_session and aktive_session in st.session_state.sessions:
+    for idx, eintrag in enumerate(st.session_state.sessions[aktive_session]):
+        if idx == 0 and not st.session_state.first_prompt_done:
+            st.markdown(f"<div style='text-align: center;'><div class='chat-right'>{eintrag['frage']}</div></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align: center;'><div class='chat-left'>{eintrag['antwort']}</div></div>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<div style='text-align: right;'><div class='chat-right'>{eintrag['frage']}</div></div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align: left;'><div class='chat-left'>{eintrag['antwort']}</div></div>", unsafe_allow_html=True)
+
+```
+
+Du kannst jetzt einfach auf **nächste Features aufbauen**, z. B. Quellen oder Feedbacksystem. Sag Bescheid, wenn’s weitergeht 🚀
 
 
