@@ -6,9 +6,9 @@ from rag_core.rag_utils import prepare_context_chunks, build_gpt_prompt, summari
 from pathlib import Path
 import openai
 
-st.set_page_config(page_title="Studienbot", layout="wide")
+st.set_page_config(page_title="Studienbot", layout="centered")
 
-# Style
+# Style: ChatGPT-Look
 st.markdown("""
 <style>
 html, body, [class*="css"]  {
@@ -16,36 +16,40 @@ html, body, [class*="css"]  {
     color: #ffffff;
     font-family: 'Segoe UI', sans-serif;
 }
-.block-container { padding: 2rem 3rem; }
-.stTextInput input, .stSelectbox select, .stButton button {
-    border-radius: 6px;
+.block-container {
+    padding: 2rem 3rem;
+    max-width: 768px;
+    margin: auto;
+}
+.chat-left, .chat-right {
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    max-width: 100%;
+    word-wrap: break-word;
 }
 .chat-left {
     background-color: #1e293b;
-    padding: 1rem;
-    border-radius: 10px;
-    margin-bottom: 1rem;
     border-left: 4px solid #2563eb;
-    max-width: 80%;
-    word-wrap: break-word;
 }
 .chat-right {
     background-color: #334155;
-    padding: 1rem;
-    border-radius: 10px;
-    margin-bottom: 1rem;
     border-right: 4px solid #2563eb;
-    margin-left: auto;
-    max-width: 80%;
-    word-wrap: break-word;
     text-align: right;
 }
-.chat-container {
-    display: flex;
-    flex-direction: column;
+input[type="text"] {
+    flex: 1;
+    padding: 0.6rem;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    background-color: #1e1e24;
+    color: #fff;
 }
-input:focus {
-    border-color: #2563eb !important;
+button[kind="primary"] {
+    background-color: #2563eb !important;
+    color: white !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 1.2rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -101,7 +105,7 @@ with st.sidebar.expander("⚙️ Einstellungen"):
 
 aktive_session = st.session_state.active_session
 
-# Titel + Beschreibung nur vor erster Eingabe anzeigen
+# Titel und Info nur bei erstem Start
 if st.session_state.initial_input:
     st.title("📘 Studienbot – Frag deine Dokumente")
     st.markdown("""
@@ -111,18 +115,20 @@ if st.session_state.initial_input:
     </p>
     """, unsafe_allow_html=True)
 elif aktive_session:
-    st.markdown(f"## {aktive_session}")
+    st.markdown(f"### 📁 {aktive_session}  | 🤖 Modell: gpt-4o-mini")
 
-# Chat-Verlauf
+# Chatverlauf
 if aktive_session and aktive_session in st.session_state.sessions:
     for eintrag in st.session_state.sessions[aktive_session]:
         st.markdown(f"<div class='chat-container'><div class='chat-right'>{eintrag['frage']}</div></div>", unsafe_allow_html=True)
         st.markdown(f"<div class='chat-container'><div class='chat-left'>{eintrag['antwort']}</div></div>", unsafe_allow_html=True)
 
-# Eingabe + Abschicken
-frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?", key="frage_input")
+# Eingabefeld + Button
+frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?", key="frage_input", label_visibility="collapsed")
+abgeschickt = st.button("➤", use_container_width=True)
 
-if frage and st.session_state.get("frage_input"):
+# Auch Senden per Enter möglich (durch Textinput + Button-Kombi in Streamlit handled)
+if frage and (abgeschickt or st.session_state.get("frage_input")):
     if not aktive_session:
         title = frage.strip()[:50]
         st.session_state.sessions[title] = []
@@ -149,6 +155,7 @@ if frage and st.session_state.get("frage_input"):
     antwort = response.choices[0].message.content
 
     st.session_state.sessions[aktive_session].append({"frage": frage, "antwort": antwort})
-    st.session_state.frage_input = ""  # Leeren
+    st.session_state.frage_input = ""
     st.rerun()
+
 
