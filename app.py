@@ -8,30 +8,79 @@ import openai
 
 st.set_page_config(page_title="📘 Studienbot RAG", layout="wide")
 st.title("📘 Studienbot: Frage deine Studienunterlagen")
-# FHDW Style
+# 💼 FHDW Corporate Look (ohne Logo, mit Design-Boost)
 fhdw_css = """
 <style>
-body {
+html, body, [class*="css"]  {
+    font-family: 'Segoe UI', Roboto, sans-serif;
     background-color: #ffffff;
     color: #002b5c;
 }
-h1, h2, h3 {
-    color: #002b5c !important;
+
+/* Titelblock */
+h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    padding-bottom: 0.2rem;
+    border-bottom: 3px solid #002b5c;
+    margin-bottom: 1.2rem;
 }
-button[kind="primary"] {
-    background-color: #002b5c !important;
-    color: white !important;
-    border-radius: 4px;
-}
-div[data-testid="stSidebar"] {
-    background-color: #f0f2f6;
-}
+
+/* Input-Styling */
 input, textarea {
-    border-radius: 6px !important;
     border: 1px solid #ccc !important;
+    border-radius: 6px !important;
+    padding: 0.5rem !important;
+    background-color: #f9f9f9;
+}
+
+/* Buttons */
+.stButton button {
+    background-color: #002b5c;
+    color: white;
+    font-weight: 600;
+    padding: 0.6em 1.5em;
+    border-radius: 5px;
+    border: none;
+    transition: all 0.2s ease-in-out;
+}
+.stButton button:hover {
+    background-color: #003c85;
+    transform: scale(1.02);
+}
+
+/* Statusboxen */
+div[data-testid="stAlert"] {
+    border-left: 6px solid #002b5c;
+    background-color: #eef4fa;
+    padding: 1rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* Markdown-Antworten */
+.stMarkdown {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    padding: 1rem;
+    background-color: #f6f8fb;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border: 1px solid #dfe6ef;
+    margin-top: 1rem;
+}
+
+/* Trennlinien */
+hr {
+    border: none;
+    border-top: 1px solid #ccd6e0;
+    margin: 2rem 0;
 }
 </style>
 """
+
+st.markdown(fhdw_css, unsafe_allow_html=True)
+
 
 st.markdown(fhdw_css, unsafe_allow_html=True)
 
