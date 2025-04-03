@@ -7,7 +7,7 @@ from pathlib import Path
 import openai
 
 st.set_page_config(page_title="📘 Studienbot RAG", layout="wide")
-st.title("📘 Studienbot: Frage deine Studienunterlagen")
+st.title("📘 Studienbot")
 # 💼 FHDW Corporate Look (ohne Logo, mit Design-Boost)
 fhdw_css = """
 <style>
@@ -114,10 +114,8 @@ if new_pdfs:
 else:
     st.info("✅ Es gibt keine neuen PDFs – deine Datenbank ist aktuell.")
 
-st.caption(f"Aktuell erkannte Dateien: {len(pdf_paths)} im Azure-Container, {len(stored_sources)} in Qdrant.")
-
 # 🧠 Frage stellen
-frage = st.text_input("❓ Deine Frage:", placeholder="Was steht zur Praxisphase in den Dokumenten?")
+frage = st.text_input("❓ Deine Frage:", placeholder="Welche Spezialisierungen gibt es?")
 
 if frage:
     with st.spinner("Antwort wird generiert..."):
