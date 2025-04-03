@@ -12,34 +12,40 @@ st.set_page_config(page_title="Studienbot", layout="wide")
 st.markdown("""
 <style>
 html, body, [class*="css"]  {
-    background-color: #0e1117 !important;
-    color: #f0f0f0;
+    background-color: #0f1117 !important;
+    color: #ffffff;
     font-family: 'Segoe UI', sans-serif;
 }
 .block-container { padding: 2rem 3rem; }
-.stTextInput input, .stSelectbox select {
+.stTextInput input, .stSelectbox select, .stButton button {
     border-radius: 6px;
-    background-color: #1e222a;
-    color: #f0f0f0;
 }
-.chat-bubble {
-    background-color: #1e3a5f;
+.chat-left {
+    background-color: #1e293b;
     padding: 1rem;
     border-radius: 10px;
-    margin: 1rem 0;
-    width: fit-content;
+    margin-bottom: 1rem;
+    border-left: 4px solid #2563eb;
     max-width: 80%;
-    line-height: 1.6;
+    word-wrap: break-word;
 }
-.user-bubble {
-    background-color: #004080;
+.chat-right {
+    background-color: #334155;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    border-right: 4px solid #2563eb;
     margin-left: auto;
+    max-width: 80%;
+    word-wrap: break-word;
     text-align: right;
 }
-.bot-bubble {
-    background-color: #1e3a5f;
-    margin-right: auto;
-    text-align: left;
+.chat-container {
+    display: flex;
+    flex-direction: column;
+}
+input:focus {
+    border-color: #2563eb !important;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -61,13 +67,13 @@ db = QdrantDB(api_key=OPENAI_API_KEY, host=QDRANT_HOST, qdrant_api_key=QDRANT_AP
 
 # Sidebar
 st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/1/1b/FHDW_logo_201x60.png", width=150)
-st.sidebar.markdown("## Studienbot")
+
+if "sessions" not in st.session_state:
+    st.session_state.sessions = {}
+    st.session_state.active_session = None
+    st.session_state.initial_input = True
 
 with st.sidebar.expander("📂 Sitzungen verwalten"):
-    if "sessions" not in st.session_state:
-        st.session_state.sessions = {}
-        st.session_state.active_session = None
-
     session_names = list(st.session_state.sessions.keys())
     selected = st.selectbox("Session auswählen:", session_names + ["➕ Neue starten"])
     if selected == "➕ Neue starten":
@@ -93,29 +99,37 @@ with st.sidebar.expander("⚙️ Einstellungen"):
         else:
             st.info("📁 Keine neuen PDFs gefunden.")
 
-# Hauptbereich
-st.title("📘 Studienbot – Frag deine Dokumente")
-
-show_description = not st.session_state.get("first_input_done", False)
-if show_description:
-    st.markdown("<p style='font-size: 1rem; color: #cccccc;'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</p>", unsafe_allow_html=True)
-
 aktive_session = st.session_state.active_session
+
+# Titel + Beschreibung nur vor erster Eingabe anzeigen
+if st.session_state.initial_input:
+    st.title("📘 Studienbot – Frag deine Dokumente")
+    st.markdown("""
+    <p style='color:#94a3b8; font-weight:500;'>
+        Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen.
+        Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.
+    </p>
+    """, unsafe_allow_html=True)
+elif aktive_session:
+    st.markdown(f"## {aktive_session}")
+
+# Chat-Verlauf
 if aktive_session and aktive_session in st.session_state.sessions:
     for eintrag in st.session_state.sessions[aktive_session]:
-        st.markdown(f"<div class='chat-bubble user-bubble'>{eintrag['frage']}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='chat-bubble bot-bubble'>{eintrag['antwort']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='chat-container'><div class='chat-right'>{eintrag['frage']}</div></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='chat-container'><div class='chat-left'>{eintrag['antwort']}</div></div>", unsafe_allow_html=True)
 
-frage = st.text_input("Deine Frage:", value="", placeholder="Was möchtest du wissen?")
+# Eingabe + Abschicken
+frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?", key="frage_input")
 
-if frage and frage.strip():
+if frage and st.session_state.get("frage_input"):
     if not aktive_session:
         title = frage.strip()[:50]
         st.session_state.sessions[title] = []
         st.session_state.active_session = title
         aktive_session = title
 
-    st.session_state.first_input_done = True
+    st.session_state.initial_input = False
 
     resultate = db.query(frage, n=30)
     kontext = prepare_context_chunks(resultate)
@@ -135,5 +149,6 @@ if frage and frage.strip():
     antwort = response.choices[0].message.content
 
     st.session_state.sessions[aktive_session].append({"frage": frage, "antwort": antwort})
+    st.session_state.frage_input = ""  # Leeren
     st.rerun()
 
