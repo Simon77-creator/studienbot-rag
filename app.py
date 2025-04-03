@@ -12,47 +12,39 @@ st.set_page_config(page_title="Studienbot", layout="wide")
 st.markdown("""
 <style>
 html, body, [class*="css"]  {
-    background-color: #1e1e1e !important;
-    color: #dcdcdc;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #f8fafc !important;
+    color: #0f172a;
+    font-family: 'Segoe UI', sans-serif;
 }
-.block-container { padding: 1rem 2rem; }
+.block-container { padding: 1rem 2rem; max-width: 1000px; margin: auto; }
 .stTextInput input, .stSelectbox select, .stButton button {
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    padding: 0.5rem;
-    background-color: #2b2b2b;
-    color: #dcdcdc;
-}
-.stTextInput input {
-    padding-right: 2.5rem;  /* Platz für den Senden-Button */
-}
-.stButton button {
-    background-color: #4caf50;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
-    line-height: 1.2rem;
-    text-align: center;
-    padding: 0;
-    float: right;
-    margin-top: -2.5rem;
-    margin-right: 0.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
 }
 .chat-bubble {
-    background-color: #2b2b2b;
+    background-color: #1e293b;
+    color: white;
     padding: 1rem;
     border-radius: 12px;
-    margin-bottom: 1rem;
-    border: 1px solid #555;
+    margin-bottom: 1.2rem;
+    border-left: 4px solid #2563eb;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 .user-bubble {
-    background-color: #1e3a5f;
-    border: 1px solid #003366;
+    background-color: #334155;
+    border-left-color: #0284c7;
     color: white;
+}
+.sidebar .block-container {
+    padding: 1rem;
+}
+/* Send button styling */
+.send-button button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    padding: 0 0.5rem;
+    color: #1d4ed8;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -73,53 +65,54 @@ pdf_processor = PDFProcessor()
 db = QdrantDB(api_key=OPENAI_API_KEY, host=QDRANT_HOST, qdrant_api_key=QDRANT_API_KEY)
 
 # Sidebar
-st.sidebar.title("📚 Studienbot")
+st.sidebar.markdown("# 📘 Studienbot")
 
-st.sidebar.subheader("🗂️ Deine Sessions")
-if "sessions" not in st.session_state:
-    st.session_state.sessions = {}
-    st.session_state.active_session = None
+with st.sidebar.expander("📂 Sitzungen verwalten", expanded=True):
+    if "sessions" not in st.session_state:
+        st.session_state.sessions = {}
+        st.session_state.active_session = None
 
-session_names = list(st.session_state.sessions.keys())
-selected = st.sidebar.selectbox("Session auswählen:", session_names + ["➕ Neue starten"])
-if selected == "➕ Neue starten":
-    st.session_state.active_session = None
-else:
-    st.session_state.active_session = selected
+    session_names = list(st.session_state.sessions.keys())
+    selected = st.selectbox("Session auswählen:", session_names + ["➕ Neue starten"])
+    if selected == "➕ Neue starten":
+        st.session_state.active_session = None
+    else:
+        st.session_state.active_session = selected
 
-# Einstellungen (nur wenn aufgeklappt PDF laden sichtbar)
-st.sidebar.subheader("⚙️ Einstellungen")
-if st.sidebar.checkbox("🔧 Optionen anzeigen"):
-    with st.sidebar.expander("📥 PDF-Import aus Azure Blob"):
-        if st.button("🔄 Neue PDFs laden"):
-            with st.spinner("Lade PDFs von Azure..."):
-                pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
-                stored_sources = db.get_stored_sources()
-                new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
+with st.sidebar.expander("⚙️ Einstellungen"):
+    if st.button("📥 Neue PDFs laden"):
+        with st.spinner("Lade PDFs von Azure..."):
+            pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
+            stored_sources = db.get_stored_sources()
+            new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
 
-            if new_pdfs:
-                with st.spinner("Verarbeite PDFs..."):
-                    all_chunks = []
-                    for path in new_pdfs:
-                        chunks = pdf_processor.extract_text_chunks(path)
-                        all_chunks.extend(chunks)
-                    db.add(all_chunks)
-                    st.success(f"✅ {len(all_chunks)} neue Chunks gespeichert.")
-            else:
-                st.info("📁 Keine neuen PDFs gefunden.")
+        if new_pdfs:
+            with st.spinner("Verarbeite PDFs..."):
+                all_chunks = []
+                for path in new_pdfs:
+                    chunks = pdf_processor.extract_text_chunks(path)
+                    all_chunks.extend(chunks)
+                db.add(all_chunks)
+                st.success(f"✅ {len(all_chunks)} neue Chunks gespeichert.")
+        else:
+            st.info("📁 Keine neuen PDFs gefunden.")
 
 # Hauptbereich
 st.title("📘 Studienbot – Frag deine Dokumente")
+st.markdown("<p style='font-size:1.1rem; color:#334155;'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</p>", unsafe_allow_html=True)
+
 aktive_session = st.session_state.active_session
 if aktive_session and aktive_session in st.session_state.sessions:
     for eintrag in st.session_state.sessions[aktive_session]:
-        st.markdown(f"<div class='chat-bubble user-bubble'><strong>🧑 Frage:</strong><br>{eintrag['frage']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='chat-bubble user-bubble'><strong>👤 Frage:</strong><br>{eintrag['frage']}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='chat-bubble'><strong>🤖 Antwort:</strong><br>{eintrag['antwort']}</div>", unsafe_allow_html=True)
 
 # Chat Input unten
-st.markdown("---")
-frage = st.text_input("", placeholder="Was möchtest du wissen?")
-abschicken = st.button("➤")
+frage_col, send_col = st.columns([10, 1])
+with frage_col:
+    frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?")
+with send_col:
+    abschicken = st.button("➤", key="send_button")
 
 if abschicken and frage:
     if not aktive_session:
