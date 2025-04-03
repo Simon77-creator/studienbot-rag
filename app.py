@@ -28,38 +28,26 @@ html, body, [class*="css"]  {
     color: white;
 }
 .chat-bubble {
-    background-color: #1c2a44;
-    color: white;
     padding: 1rem;
     border-radius: 10px;
     margin-bottom: 1rem;
-    border-left: 4px solid #0066cc;
     display: inline-block;
     max-width: 80%;
     word-wrap: break-word;
 }
 .user-bubble {
     background-color: #263349;
-    margin-left: auto;
-    border-left: none;
-    border-right: 4px solid #0066cc;
-    text-align: right;
-    display: inline-block;
-    max-width: 80%;
-    word-wrap: break-word;
-}
-.chat-input-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-.chat-input-container input {
-    flex: 1;
-    padding: 0.75rem;
-    border-radius: 6px;
-    background-color: #1e2130;
     color: white;
-    border: 1px solid #333;
+    margin-left: auto;
+    text-align: right;
+    border-right: 4px solid #0066cc;
+}
+.bot-bubble {
+    background-color: #1c2a44;
+    color: white;
+    margin-right: auto;
+    text-align: left;
+    border-left: 4px solid #0066cc;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -121,7 +109,7 @@ if aktive_session and aktive_session in st.session_state.sessions:
         st.markdown("<p style='color:#ccc;font-size:1.05rem;'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</p>", unsafe_allow_html=True)
     for eintrag in st.session_state.sessions[aktive_session]:
         st.markdown(f"<div class='chat-bubble user-bubble'>{eintrag['frage']}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='chat-bubble'>{eintrag['antwort']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='chat-bubble bot-bubble'>{eintrag['antwort']}</div>", unsafe_allow_html=True)
 
 # Chat Input
 frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?", label_visibility="collapsed")
