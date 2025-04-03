@@ -109,6 +109,7 @@ db = QdrantDB(api_key=st.secrets["OPENAI_API_KEY"], host=st.secrets["QDRANT_HOST
 # ====== SIDEBAR ======
 def render_sidebar():
     st.sidebar.markdown("<div class='sidebar-title'>📘 Studienbot</div>", unsafe_allow_html=True)
+    st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/1/1b/FHDW_logo_201x60.png", width=150)
 
     with st.sidebar.expander("📂 Sitzungen verwalten"):
         session_names = list(st.session_state.sessions.keys())
@@ -193,7 +194,7 @@ def handle_frage(frage, abgeschickt, frage_vorbelegt):
         st.session_state.sessions[st.session_state.active_session].append({"frage": frage, "antwort": antwort})
         st.session_state.frage_input_clear = True
         st.session_state.first_prompt_done = True
-        st.experimental_rerun()  # Use st.rerun to refresh the app
+        st.rerun()  # Use st.rerun to refresh the app
 
 # ====== CHATVERLAUF ======
 def render_chatverlauf():
