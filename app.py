@@ -173,7 +173,7 @@ def handle_frage(frage, abgeschickt, frage_vorbelegt):
         with container:
             st.markdown("<div class='loading-bubble'>• • •</div>", unsafe_allow_html=True)
 
-        resultate = db.query(frage, n=50)
+        resultate = db.query(frage, n=30)
         kontext = prepare_context_chunks(resultate)
         verlauf = st.session_state.sessions[st.session_state.active_session]
 
@@ -194,7 +194,7 @@ def handle_frage(frage, abgeschickt, frage_vorbelegt):
         st.session_state.sessions[st.session_state.active_session].append({"frage": frage, "antwort": antwort})
         st.session_state.frage_input_clear = True
         st.session_state.first_prompt_done = True
-        st.experimental_rerun()  # Use experimental_rerun to refresh the app
+        st.experimental_rerun()  # Use st.rerun to refresh the app
 
 # ====== CHATVERLAUF ======
 def render_chatverlauf():
