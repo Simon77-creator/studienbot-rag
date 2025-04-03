@@ -67,6 +67,12 @@ button[kind="primary"] {
   50% { opacity: 1; }
   100% { opacity: 0.2; }
 }
+.sidebar-title {
+    font-size: 1.6rem;
+    font-weight: bold;
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -95,7 +101,7 @@ if "first_prompt_done" not in st.session_state:
     st.session_state.first_prompt_done = False
 
 # ====== SIDEBAR ======
-st.sidebar.markdown("## 📘 Studienbot", unsafe_allow_html=True)
+st.sidebar.markdown("<div class='sidebar-title'>📘 Studienbot</div>", unsafe_allow_html=True)
 st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/1/1b/FHDW_logo_201x60.png", width=150)
 
 with st.sidebar.expander("📂 Sitzungen verwalten"):
@@ -130,7 +136,7 @@ aktive_session = st.session_state.active_session
 if st.session_state.initial_input:
     st.title("Wie kann ich dir helfen?")
 
-# ====== FRAGE-EINGABE ======
+# ====== ANTWORT-LOGIK ======
 if st.session_state.frage_input_clear:
     frage_vorbelegt = ""
     st.session_state.frage_input_clear = False
@@ -143,7 +149,6 @@ with col1:
 with col2:
     abgeschickt = st.button("➤", use_container_width=True)
 
-# ====== ANTWORT-LOGIK ======
 if frage and (abgeschickt or frage_vorbelegt):
     if not aktive_session:
         title = frage.strip()[:50]
@@ -189,5 +194,6 @@ if aktive_session and aktive_session in st.session_state.sessions:
         else:
             st.markdown(f"<div style='text-align: right;'><div class='chat-right'>{eintrag['frage']}</div></div>", unsafe_allow_html=True)
             st.markdown(f"<div style='text-align: left;'><div class='chat-left'>{eintrag['antwort']}</div></div>", unsafe_allow_html=True)
+
 
 
