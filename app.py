@@ -13,23 +13,25 @@ st.markdown("""
 <style>
 html, body, [class*="css"]  {
     background-color: #ffffff !important;
-    color: #002b5c;
-    font-family: 'Segoe UI', sans-serif;
+    color: #000000;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
-.block-container { padding: 2rem 3rem; }
+.block-container { padding: 1rem 2rem; }
 .stTextInput input, .stSelectbox select, .stButton button {
-    border-radius: 6px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    padding: 0.5rem;
 }
 .chat-bubble {
-    background-color: #f1f5f9;
+    background-color: #f7f7f8;
     padding: 1rem;
-    border-radius: 10px;
+    border-radius: 12px;
     margin-bottom: 1rem;
-    border-left: 4px solid #004080;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 .user-bubble {
-    background-color: #e4edf7;
-    border-left-color: #0077cc;
+    background-color: #e6f7ff;
+    border: 1px solid #91d5ff;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -128,7 +130,6 @@ if abschicken and frage:
 
     st.session_state.sessions[aktive_session].append({"frage": frage, "antwort": antwort})
     st.rerun()
-
 
 
 
