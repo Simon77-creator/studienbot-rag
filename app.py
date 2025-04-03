@@ -17,9 +17,10 @@ html, body, [class*="css"]  {
     font-family: 'Segoe UI', sans-serif;
 }
 .block-container { padding: 1rem 2rem; max-width: 1000px; margin: auto; }
-.stTextInput input, .stSelectbox select, .stButton button {
+.stTextInput input, .stSelectbox select {
     border-radius: 6px;
     font-size: 1rem;
+    padding-right: 2.5rem !important;
 }
 .chat-bubble {
     background-color: #1e293b;
@@ -29,22 +30,58 @@ html, body, [class*="css"]  {
     margin-bottom: 1.2rem;
     border-left: 4px solid #2563eb;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    max-width: 75%;
 }
 .user-bubble {
     background-color: #334155;
     border-left-color: #0284c7;
     color: white;
+    margin-left: auto;
+    text-align: right;
+}
+.bot-bubble {
+    margin-right: auto;
+    text-align: left;
 }
 .sidebar .block-container {
     padding: 1rem;
 }
-/* Send button styling */
+.send-button {
+    position: absolute;
+    right: 3.2rem;
+    bottom: 0.6rem;
+    z-index: 10;
+}
 .send-button button {
     background: none;
     border: none;
-    font-size: 1.5rem;
-    padding: 0 0.5rem;
+    font-size: 1.3rem;
+    padding: 0;
+    margin: 0;
     color: #1d4ed8;
+}
+.input-wrapper {
+    position: relative;
+}
+.loader {
+    width: 30px;
+    display: flex;
+    justify-content: space-between;
+    margin-left: 0.2rem;
+    margin-top: 0.3rem;
+}
+.loader div {
+    width: 6px;
+    height: 6px;
+    background: #94a3b8;
+    border-radius: 50%;
+    animation: blink 1.4s infinite ease-in-out both;
+}
+.loader div:nth-child(2) { animation-delay: 0.2s; }
+.loader div:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink {
+    0%, 80%, 100% { opacity: 0; }
+    40% { opacity: 1; }
 }
 </style>
 """, unsafe_allow_html=True)
@@ -99,20 +136,24 @@ with st.sidebar.expander("⚙️ Einstellungen"):
 
 # Hauptbereich
 st.title("📘 Studienbot – Frag deine Dokumente")
-st.markdown("<p style='font-size:1.1rem; color:#334155;'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</p>", unsafe_allow_html=True)
+st.markdown("<p style='font-size:1.1rem; color:#1e293b; font-weight: 600;'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</p>", unsafe_allow_html=True)
 
 aktive_session = st.session_state.active_session
 if aktive_session and aktive_session in st.session_state.sessions:
     for eintrag in st.session_state.sessions[aktive_session]:
-        st.markdown(f"<div class='chat-bubble user-bubble'><strong>👤 Frage:</strong><br>{eintrag['frage']}</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='chat-bubble'><strong>🤖 Antwort:</strong><br>{eintrag['antwort']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='chat-bubble user-bubble'><strong>👤</strong><br>{eintrag['frage']}</div>", unsafe_allow_html=True)
+        if eintrag['antwort'] == "...":
+            st.markdown("<div class='chat-bubble bot-bubble'><strong>🤖</strong><br><div class='loader'><div></div><div></div><div></div></div></div>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<div class='chat-bubble bot-bubble'><strong>🤖</strong><br>{eintrag['antwort']}</div>", unsafe_allow_html=True)
 
 # Chat Input unten
-frage_col, send_col = st.columns([10, 1])
-with frage_col:
-    frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?")
-with send_col:
-    abschicken = st.button("➤", key="send_button")
+with st.form(key="chat_form"):
+    st.markdown('<div class="input-wrapper">', unsafe_allow_html=True)
+    frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?", label_visibility="visible")
+    st.markdown('<div class="send-button">', unsafe_allow_html=True)
+    abschicken = st.form_submit_button("➤")
+    st.markdown('</div></div>', unsafe_allow_html=True)
 
 if abschicken and frage:
     if not aktive_session:
@@ -121,22 +162,28 @@ if abschicken and frage:
         st.session_state.active_session = title
         aktive_session = title
 
-    resultate = db.query(frage, n=30)
-    kontext = prepare_context_chunks(resultate)
     verlauf = st.session_state.sessions[aktive_session]
-
-    verlaufszusammenfassung = summarize_session_history(
-        verlauf, max_tokens=800, model="gpt-4o-mini", api_key=OPENAI_API_KEY
-    )
-
-    messages = build_gpt_prompt(kontext, frage, verlaufszusammenfassung)
-    response = openai_client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=messages,
-        temperature=0.3,
-        max_tokens=1500
-    )
-    antwort = response.choices[0].message.content
-
-    st.session_state.sessions[aktive_session].append({"frage": frage, "antwort": antwort})
+    verlauf.append({"frage": frage, "antwort": "..."})
     st.rerun()
+
+if aktive_session and st.session_state.sessions[aktive_session]:
+    last = st.session_state.sessions[aktive_session][-1]
+    if last["antwort"] == "...":
+        resultate = db.query(last["frage"], n=30)
+        kontext = prepare_context_chunks(resultate)
+        verlauf = st.session_state.sessions[aktive_session][:-1]
+
+        verlaufszusammenfassung = summarize_session_history(
+            verlauf, max_tokens=800, model="gpt-4o-mini", api_key=OPENAI_API_KEY
+        )
+
+        messages = build_gpt_prompt(kontext, last["frage"], verlaufszusammenfassung)
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0.3,
+            max_tokens=1500
+        )
+        antwort = response.choices[0].message.content
+        st.session_state.sessions[aktive_session][-1]["antwort"] = antwort
+        st.rerun()
