@@ -81,9 +81,6 @@ hr {
 
 st.markdown(fhdw_css, unsafe_allow_html=True)
 
-
-st.markdown(fhdw_css, unsafe_allow_html=True)
-
 # 🔐 Secrets laden
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 AZURE_BLOB_CONN_STR = st.secrets["AZURE_BLOB_CONN_STR"]
