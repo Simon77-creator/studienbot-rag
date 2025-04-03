@@ -8,54 +8,33 @@ import openai
 
 st.set_page_config(page_title="Studienbot", layout="wide")
 
-# Helles, funktionales Layout
+# Helles Theme erzwungen (auch bei Darkmode)
 st.markdown("""
-<style>
-html, body, [class*="css"]  {
-    background-color: #ffffff;
-    font-family: 'Segoe UI', sans-serif;
-    color: #002b5c;
-}
-.block-container {
-    padding: 2rem 3rem;
-}
-input, textarea {
-    background-color: #f8f9fa !important;
-    color: #002b5c !important;
-    border: 1px solid #ccd6e0 !important;
-    border-radius: 6px !important;
-    padding: 0.5rem !important;
-}
-.stTextInput > div > div > input {
-    padding: 0.6rem !important;
-}
-.stButton > button {
-    background-color: #002b5c;
-    color: white;
-    font-weight: 600;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    border: none;
-}
-.stButton > button:hover {
-    background-color: #004a99;
-}
-.chat-bubble {
-    background-color: #f2f6fa;
-    padding: 1rem;
-    border-radius: 10px;
-    margin-bottom: 1rem;
-    border-left: 4px solid #004080;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
-}
-.user-bubble {
-    background-color: #e4edf7;
-    border-left-color: #0077cc;
-}
-</style>
+    <style>
+    html, body, [class*="css"]  {
+        background-color: #ffffff !important;
+        color: #002b5c;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .block-container { padding: 2rem 3rem; }
+    .stTextInput input, .stSelectbox select, .stButton button {
+        border-radius: 6px;
+    }
+    .chat-bubble {
+        background-color: #f1f5f9;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #004080;
+    }
+    .user-bubble {
+        background-color: #e4edf7;
+        border-left-color: #0077cc;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-# Secrets prüfen
+# Secrets laden
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY")
 AZURE_BLOB_CONN_STR = st.secrets.get("AZURE_BLOB_CONN_STR")
 AZURE_CONTAINER = st.secrets.get("AZURE_CONTAINER")
@@ -70,52 +49,55 @@ openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 pdf_processor = PDFProcessor()
 db = QdrantDB(api_key=OPENAI_API_KEY, host=QDRANT_HOST, qdrant_api_key=QDRANT_API_KEY)
 
-# Sidebar mit Sessions + PDF-Sync
+# Sidebar
 st.sidebar.title("📚 Studienbot")
 
-st.sidebar.subheader("📂 Deine Sessions")
+st.sidebar.subheader("🗂️ Deine Sessions")
 if "sessions" not in st.session_state:
     st.session_state.sessions = {}
     st.session_state.active_session = None
 
 session_names = list(st.session_state.sessions.keys())
-selected = st.sidebar.selectbox("Session", session_names + ["➕ Neue starten"])
+selected = st.sidebar.selectbox("Session auswählen:", session_names + ["➕ Neue starten"])
 if selected == "➕ Neue starten":
     st.session_state.active_session = None
 else:
     st.session_state.active_session = selected
 
+# Einstellungen aufklappbar
 st.sidebar.subheader("⚙️ Einstellungen")
-if st.sidebar.button("🔄 Neue PDFs laden"):
-    with st.spinner("Lade PDFs von Azure..."):
-        pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
-        stored_sources = db.get_stored_sources()
-        new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
+if st.sidebar.checkbox("📥 PDF-Verwaltung anzeigen"):
+    if st.sidebar.button("🔄 Neue PDFs laden"):
+        with st.spinner("Lade PDFs von Azure..."):
+            pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
+            stored_sources = db.get_stored_sources()
+            new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
 
-    if new_pdfs:
-        with st.spinner("Verarbeite PDFs..."):
-            all_chunks = []
-            for path in new_pdfs:
-                chunks = pdf_processor.extract_text_chunks(path)
-                all_chunks.extend(chunks)
-            db.add(all_chunks)
-            st.sidebar.success(f"✅ {len(all_chunks)} neue Abschnitte gespeichert.")
-    else:
-        st.sidebar.info("📁 Keine neuen PDFs gefunden.")
+        if new_pdfs:
+            with st.spinner("Verarbeite PDFs..."):
+                all_chunks = []
+                for path in new_pdfs:
+                    chunks = pdf_processor.extract_text_chunks(path)
+                    all_chunks.extend(chunks)
+                db.add(all_chunks)
+                st.sidebar.success(f"✅ {len(all_chunks)} neue Chunks gespeichert.")
+        else:
+            st.sidebar.info("📁 Keine neuen PDFs gefunden.")
 
 # Hauptbereich
-st.title("Studienbot – Frag deine Dokumente")
+st.title("📘 Studienbot – Frag deine Dokumente")
 aktive_session = st.session_state.active_session
 if aktive_session and aktive_session in st.session_state.sessions:
     for eintrag in st.session_state.sessions[aktive_session]:
         st.markdown(f"<div class='chat-bubble user-bubble'><strong>🧑 Frage:</strong><br>{eintrag['frage']}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='chat-bubble'><strong>🤖 Antwort:</strong><br>{eintrag['antwort']}</div>", unsafe_allow_html=True)
 
-# Eingabe
+# Chat Input unten
+st.markdown("---")
 with st.container():
     col1, col2 = st.columns([6, 1])
     with col1:
-        frage = st.text_input("", placeholder="Deine Frage hier eingeben...")
+        frage = st.text_input("", placeholder="Was möchtest du wissen?")
     with col2:
         abschicken = st.button("Senden")
 
