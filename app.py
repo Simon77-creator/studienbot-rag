@@ -155,7 +155,7 @@ if frage and (abgeschickt or frage_vorbelegt):
 
     container = st.empty()
     with container:
-        st.markdown("<div class='loading-bubble'>\u2022 \u2022 \u2022</div>", unsafe_allow_html=True)
+        st.markdown("<div class='loading-bubble'>• • •</div>", unsafe_allow_html=True)
 
     resultate = db.query(frage, n=30)
     kontext = prepare_context_chunks(resultate)
@@ -189,9 +189,5 @@ if aktive_session and aktive_session in st.session_state.sessions:
         else:
             st.markdown(f"<div style='text-align: right;'><div class='chat-right'>{eintrag['frage']}</div></div>", unsafe_allow_html=True)
             st.markdown(f"<div style='text-align: left;'><div class='chat-left'>{eintrag['antwort']}</div></div>", unsafe_allow_html=True)
-
-```
-
-Du kannst jetzt einfach auf **nächste Features aufbauen**, z. B. Quellen oder Feedbacksystem. Sag Bescheid, wenn’s weitergeht 🚀
 
 
