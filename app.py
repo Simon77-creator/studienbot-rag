@@ -20,36 +20,42 @@ html, body, [class*="css"]  {
 .stTextInput input, .stSelectbox select {
     border-radius: 6px;
     font-size: 1rem;
-    padding-right: 2.5rem !important;
+    padding-right: 3rem !important;
 }
 .chat-bubble {
     background-color: #1e293b;
-    color: white;
+    color: #f1f5f9;
     padding: 1rem;
     border-radius: 12px;
-    margin-bottom: 1.2rem;
+    margin: 0.5rem 0;
     border-left: 4px solid #2563eb;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    max-width: 75%;
+    width: fit-content;
+    max-width: 85%;
+    word-break: break-word;
+    font-size: 1.05rem;
+    line-height: 1.5;
 }
 .user-bubble {
     background-color: #334155;
     border-left-color: #0284c7;
-    color: white;
+    color: #f1f5f9;
     margin-left: auto;
     text-align: right;
+    align-self: flex-end;
 }
 .bot-bubble {
     margin-right: auto;
     text-align: left;
+    align-self: flex-start;
 }
 .sidebar .block-container {
     padding: 1rem;
 }
 .send-button {
     position: absolute;
-    right: 3.2rem;
-    bottom: 0.6rem;
+    right: 0.75rem;
+    top: 0.4rem;
     z-index: 10;
 }
 .send-button button {
@@ -67,7 +73,6 @@ html, body, [class*="css"]  {
     width: 30px;
     display: flex;
     justify-content: space-between;
-    margin-left: 0.2rem;
     margin-top: 0.3rem;
 }
 .loader div {
