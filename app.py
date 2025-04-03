@@ -107,7 +107,6 @@ db = QdrantDB(api_key=st.secrets["OPENAI_API_KEY"], host=st.secrets["QDRANT_HOST
 # ====== SIDEBAR ======
 def render_sidebar():
     st.sidebar.markdown("<div class='sidebar-title'>📘 Studienbot</div>", unsafe_allow_html=True)
-    st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/1/1b/FHDW_logo_201x60.png", width=150)
 
     with st.sidebar.expander("📂 Sitzungen verwalten"):
         session_names = list(st.session_state.sessions.keys())
