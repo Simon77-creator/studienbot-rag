@@ -89,7 +89,9 @@ def check_secrets():
 def initialize_state():
     if "sessions" not in st.session_state:
         st.session_state.sessions = {}
+    if "active_session" not in st.session_state:
         st.session_state.active_session = None
+    if "initial_input" not in st.session_state:
         st.session_state.initial_input = True
     if "frage_input_clear" not in st.session_state:
         st.session_state.frage_input_clear = False
@@ -107,6 +109,7 @@ db = QdrantDB(api_key=st.secrets["OPENAI_API_KEY"], host=st.secrets["QDRANT_HOST
 # ====== SIDEBAR ======
 def render_sidebar():
     st.sidebar.markdown("<div class='sidebar-title'>📘 Studienbot</div>", unsafe_allow_html=True)
+    st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/1/1b/FHDW_logo_201x60.png", width=150)
 
     with st.sidebar.expander("📂 Sitzungen verwalten"):
         session_names = list(st.session_state.sessions.keys())
@@ -150,7 +153,7 @@ def frage_eingabe():
 
     col1, col2 = st.columns([6, 1])
     with col1:
-        frage = st.text_input("Deine Frage:", value=frage_vorbelegt, placeholder="Stelle eine Frage...", key="frage_input", label_visibility="collapsed")
+        frage = st.text_input("Deine Frage:", value=frage_vorbelegt, placeholder="Stelle irgendeine Frage", key="frage_input", label_visibility="collapsed")
     with col2:
         abgeschickt = st.button("➤", use_container_width=True)
 
@@ -191,7 +194,7 @@ def handle_frage(frage, abgeschickt, frage_vorbelegt):
         st.session_state.sessions[st.session_state.active_session].append({"frage": frage, "antwort": antwort})
         st.session_state.frage_input_clear = True
         st.session_state.first_prompt_done = True
-        st.rerun()
+        st.experimental_rerun()  # Use experimental_rerun to refresh the app
 
 # ====== CHATVERLAUF ======
 def render_chatverlauf():
