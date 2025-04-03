@@ -34,6 +34,7 @@ html, body, [class*="css"]  {
     border-radius: 10px;
     margin-bottom: 1rem;
     border-left: 4px solid #0066cc;
+    display: inline-block;
     max-width: 80%;
     word-wrap: break-word;
 }
@@ -43,6 +44,9 @@ html, body, [class*="css"]  {
     border-left: none;
     border-right: 4px solid #0066cc;
     text-align: right;
+    display: inline-block;
+    max-width: 80%;
+    word-wrap: break-word;
 }
 .chat-input-container {
     display: flex;
@@ -56,14 +60,6 @@ html, body, [class*="css"]  {
     background-color: #1e2130;
     color: white;
     border: 1px solid #333;
-}
-.chat-input-container button {
-    background-color: #004080;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 0.7rem 1rem;
-    cursor: pointer;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -119,22 +115,20 @@ with st.sidebar.expander("⚙️ Einstellungen"):
 
 # Hauptbereich
 st.title("📘 Studienbot – Frag deine Dokumente")
-st.markdown("<p style='color:#ccc;font-size:1.05rem;'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</p>", unsafe_allow_html=True)
-
 aktive_session = st.session_state.active_session
 if aktive_session and aktive_session in st.session_state.sessions:
+    if len(st.session_state.sessions[aktive_session]) == 0:
+        st.markdown("<p style='color:#ccc;font-size:1.05rem;'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</p>", unsafe_allow_html=True)
     for eintrag in st.session_state.sessions[aktive_session]:
         st.markdown(f"<div class='chat-bubble user-bubble'>{eintrag['frage']}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='chat-bubble'>{eintrag['antwort']}</div>", unsafe_allow_html=True)
 
 # Chat Input
-with st.form(key="chat_form"):
-    st.markdown("<div class='chat-input-container'>", unsafe_allow_html=True)
-    frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?", label_visibility="collapsed")
-    submitted = st.form_submit_button("➤")
-    st.markdown("</div>", unsafe_allow_html=True)
+frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?", label_visibility="collapsed")
+abschicken = frage and st.session_state.get("letzte_frage") != frage
 
-if submitted and frage:
+if abschicken:
+    st.session_state["letzte_frage"] = frage
     if not aktive_session:
         title = frage.strip()[:50]
         st.session_state.sessions[title] = []
