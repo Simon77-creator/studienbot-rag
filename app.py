@@ -9,31 +9,39 @@ import openai
 st.set_page_config(page_title="📘 Studienbot RAG", layout="wide")
 st.title("📘 Studienbot: Frage deine Studienunterlagen")
 
+# 🔐 Secrets laden
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 AZURE_BLOB_CONN_STR = st.secrets["AZURE_BLOB_CONN_STR"]
 AZURE_CONTAINER = st.secrets["AZURE_CONTAINER"]
 QDRANT_HOST = st.secrets["QDRANT_HOST"]
 QDRANT_API_KEY = st.secrets["QDRANT_API_KEY"]
 
+# 🔧 Setup
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 pdf_processor = PDFProcessor()
 db = QdrantDB(api_key=OPENAI_API_KEY, host=QDRANT_HOST, qdrant_api_key=QDRANT_API_KEY)
 
-if st.button("🔄 PDFs aus Azure laden & verarbeiten"):
-    with st.spinner("Lade PDFs aus Azure Blob Storage..."):
-        pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
-        stored_sources = db.get_stored_sources()
-        new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
-        if not new_pdfs:
-            st.info("✅ Alle PDFs wurden bereits verarbeitet.")
-        else:
+# 📂 Azure PDFs laden und checken
+with st.spinner("🔍 Prüfe Azure auf neue PDFs..."):
+    pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
+    stored_sources = db.get_stored_sources()
+    new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
+
+if new_pdfs:
+    if st.button(f"📥 {len(new_pdfs)} neue PDFs erkannt – jetzt verarbeiten"):
+        with st.spinner("🚀 Verarbeite neue PDFs..."):
             all_chunks = []
             for path in new_pdfs:
                 chunks = pdf_processor.extract_text_chunks(path)
                 all_chunks.extend(chunks)
             db.add(all_chunks)
-            st.success(f"{len(all_chunks)} neue Abschnitte gespeichert.")
+            st.success(f"✅ {len(all_chunks)} neue Abschnitte gespeichert.")
+else:
+    st.info("✅ Es gibt keine neuen PDFs – deine Datenbank ist aktuell.")
 
+st.caption(f"Aktuell erkannte Dateien: {len(pdf_paths)} im Azure-Container, {len(stored_sources)} in Qdrant.")
+
+# 🧠 Frage stellen
 frage = st.text_input("❓ Deine Frage:", placeholder="Was steht zur Praxisphase in den Dokumenten?")
 
 if frage:
@@ -46,7 +54,7 @@ if frage:
         else:
             messages = build_gpt_prompt(kontext, frage)
             response = openai_client.chat.completions.create(
-                model="gpt-4o-mini",  # ⬅️ Wichtig: GPT-4o-mini
+                model="gpt-4o-mini",  # dein Modell
                 messages=messages,
                 temperature=0.3,
                 max_tokens=1500
@@ -57,3 +65,4 @@ if frage:
     if st.checkbox("🔎 Kontext anzeigen"):
         for c in kontext:
             st.markdown(f"**{c['source']} – Seite {c['page']}**\n\n{c['text']}\n\n---")
+
