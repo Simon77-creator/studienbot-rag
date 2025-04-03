@@ -8,58 +8,54 @@ import openai
 
 st.set_page_config(page_title="Studienbot", layout="wide")
 
-# FHDW / ChatGPT CSS Style
+# Helles, funktionales Layout
 st.markdown("""
 <style>
 html, body, [class*="css"]  {
-    background-color: #f5f7fb;
+    background-color: #ffffff;
     font-family: 'Segoe UI', sans-serif;
     color: #002b5c;
 }
 .block-container {
-    padding: 0 3rem;
-}
-.stTextInput > div > div > input {
-    padding: 0.6rem;
+    padding: 2rem 3rem;
 }
 input, textarea {
-    background-color: #ffffff !important;
+    background-color: #f8f9fa !important;
     color: #002b5c !important;
     border: 1px solid #ccd6e0 !important;
     border-radius: 6px !important;
+    padding: 0.5rem !important;
 }
-.stChatInputContainer {display: flex; align-items: center;}
-.stChatInputContainer input {
-    flex: 1;
-    margin-right: 10px;
+.stTextInput > div > div > input {
+    padding: 0.6rem !important;
 }
-.send-button button {
+.stButton > button {
     background-color: #002b5c;
     color: white;
     font-weight: 600;
-    padding: 0.6rem 1.2rem;
+    padding: 0.5rem 1rem;
     border-radius: 6px;
     border: none;
 }
-.send-button button:hover {
+.stButton > button:hover {
     background-color: #004a99;
 }
 .chat-bubble {
-    background-color: #ffffff;
+    background-color: #f2f6fa;
     padding: 1rem;
     border-radius: 10px;
     margin-bottom: 1rem;
     border-left: 4px solid #004080;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.03);
 }
 .user-bubble {
-    background-color: #dbeaff;
+    background-color: #e4edf7;
     border-left-color: #0077cc;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# Secrets
+# Secrets prüfen
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY")
 AZURE_BLOB_CONN_STR = st.secrets.get("AZURE_BLOB_CONN_STR")
 AZURE_CONTAINER = st.secrets.get("AZURE_CONTAINER")
@@ -74,8 +70,10 @@ openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 pdf_processor = PDFProcessor()
 db = QdrantDB(api_key=OPENAI_API_KEY, host=QDRANT_HOST, qdrant_api_key=QDRANT_API_KEY)
 
-# Sidebar mit Session-Auswahl
-st.sidebar.header("📂 Sessions")
+# Sidebar mit Sessions + PDF-Sync
+st.sidebar.title("📚 Studienbot")
+
+st.sidebar.subheader("📂 Deine Sessions")
 if "sessions" not in st.session_state:
     st.session_state.sessions = {}
     st.session_state.active_session = None
@@ -87,35 +85,33 @@ if selected == "➕ Neue starten":
 else:
     st.session_state.active_session = selected
 
-st.title("Studienbot – Chat")
+st.sidebar.subheader("⚙️ Einstellungen")
+if st.sidebar.button("🔄 Neue PDFs laden"):
+    with st.spinner("Lade PDFs von Azure..."):
+        pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
+        stored_sources = db.get_stored_sources()
+        new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
 
-# PDF Expander oben
-with st.expander("📥 Neue PDFs laden"):
-    if st.button("🔄 PDF-Sync starten"):
-        with st.spinner("Lade PDFs von Azure..."):
-            pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
-            stored_sources = db.get_stored_sources()
-            new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
+    if new_pdfs:
+        with st.spinner("Verarbeite PDFs..."):
+            all_chunks = []
+            for path in new_pdfs:
+                chunks = pdf_processor.extract_text_chunks(path)
+                all_chunks.extend(chunks)
+            db.add(all_chunks)
+            st.sidebar.success(f"✅ {len(all_chunks)} neue Abschnitte gespeichert.")
+    else:
+        st.sidebar.info("📁 Keine neuen PDFs gefunden.")
 
-        if new_pdfs and st.button(f"🚀 {len(new_pdfs)} neue PDFs verarbeiten"):
-            with st.spinner("Verarbeite PDFs..."):
-                all_chunks = []
-                for path in new_pdfs:
-                    chunks = pdf_processor.extract_text_chunks(path)
-                    all_chunks.extend(chunks)
-                db.add(all_chunks)
-                st.success(f"✅ {len(all_chunks)} Chunks gespeichert.")
-        else:
-            st.info("Keine neuen PDFs gefunden.")
-
-# Chat-Ausgabe
+# Hauptbereich
+st.title("Studienbot – Frag deine Dokumente")
 aktive_session = st.session_state.active_session
 if aktive_session and aktive_session in st.session_state.sessions:
     for eintrag in st.session_state.sessions[aktive_session]:
         st.markdown(f"<div class='chat-bubble user-bubble'><strong>🧑 Frage:</strong><br>{eintrag['frage']}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='chat-bubble'><strong>🤖 Antwort:</strong><br>{eintrag['antwort']}</div>", unsafe_allow_html=True)
 
-# Eingabezeile mit Button in einer Zeile
+# Eingabe
 with st.container():
     col1, col2 = st.columns([6, 1])
     with col1:
@@ -149,6 +145,7 @@ if abschicken and frage:
 
     st.session_state.sessions[aktive_session].append({"frage": frage, "antwort": antwort})
     st.rerun()
+
 
 
 
