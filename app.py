@@ -55,7 +55,8 @@ html, body, [class*="css"]  {
 .send-button {
     position: absolute;
     right: 0.75rem;
-    top: 0.4rem;
+    top: 50%;
+    transform: translateY(-50%);
     z-index: 10;
 }
 .send-button button {
@@ -141,21 +142,21 @@ with st.sidebar.expander("⚙️ Einstellungen"):
 
 # Hauptbereich
 st.title("📘 Studienbot – Frag deine Dokumente")
-st.markdown("<p style='font-size:1.1rem; color:#1e293b; font-weight: 600;'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</p>", unsafe_allow_html=True)
+st.markdown("<p style='font-size:1.1rem; color:#0f172a; font-weight: 600;'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</p>", unsafe_allow_html=True)
 
 aktive_session = st.session_state.active_session
 if aktive_session and aktive_session in st.session_state.sessions:
     for eintrag in st.session_state.sessions[aktive_session]:
-        st.markdown(f"<div class='chat-bubble user-bubble'><strong>👤</strong><br>{eintrag['frage']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='chat-bubble user-bubble'>{eintrag['frage']}</div>", unsafe_allow_html=True)
         if eintrag['antwort'] == "...":
-            st.markdown("<div class='chat-bubble bot-bubble'><strong>🤖</strong><br><div class='loader'><div></div><div></div><div></div></div></div>", unsafe_allow_html=True)
+            st.markdown("<div class='chat-bubble bot-bubble'><div class='loader'><div></div><div></div><div></div></div></div>", unsafe_allow_html=True)
         else:
-            st.markdown(f"<div class='chat-bubble bot-bubble'><strong>🤖</strong><br>{eintrag['antwort']}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='chat-bubble bot-bubble'>{eintrag['antwort']}</div>", unsafe_allow_html=True)
 
 # Chat Input unten
 with st.form(key="chat_form"):
     st.markdown('<div class="input-wrapper">', unsafe_allow_html=True)
-    frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?", label_visibility="visible")
+    frage = st.text_input("", placeholder="Was möchtest du wissen?", label_visibility="collapsed")
     st.markdown('<div class="send-button">', unsafe_allow_html=True)
     abschicken = st.form_submit_button("➤")
     st.markdown('</div></div>', unsafe_allow_html=True)
