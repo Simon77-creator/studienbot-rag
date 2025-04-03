@@ -8,60 +8,58 @@ import openai
 
 st.set_page_config(page_title="Studienbot", layout="wide")
 
-# ======= FHDW + ChatGPT Style CSS =======
+# FHDW / ChatGPT CSS Style
 st.markdown("""
-    <style>
-    html, body, [class*="css"]  {
-        background-color: #f5f7fb;
-        font-family: 'Segoe UI', sans-serif;
-        color: #002b5c;
-    }
-    .block-container {
-        padding: 0 3rem;
-    }
-    h1 {
-        font-size: 1.9rem;
-        font-weight: 700;
-        margin-bottom: 1rem;
-        color: #002b5c;
-    }
-    .stButton > button {
-        background-color: #002b5c;
-        color: white;
-        font-weight: 600;
-        padding: 0.6rem 1.2rem;
-        border: none;
-        border-radius: 6px;
-    }
-    .stButton > button:hover {
-        background-color: #004a99;
-        transform: scale(1.01);
-    }
-    input, textarea {
-        background-color: #ffffff !important;
-        color: #002b5c !important;
-        border: 1px solid #ccd6e0 !important;
-        border-radius: 6px !important;
-    }
-    .stTextInput > div > div > input {
-        padding: 0.6rem !important;
-    }
-    .chat-bubble {
-        background-color: #ffffff;
-        padding: 1rem;
-        border-radius: 10px;
-        margin-bottom: 1rem;
-        border-left: 4px solid #004080;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    }
-    .user-bubble {
-        background-color: #dbeaff;
-        border-left-color: #0077cc;
-    }
-    </style>
+<style>
+html, body, [class*="css"]  {
+    background-color: #f5f7fb;
+    font-family: 'Segoe UI', sans-serif;
+    color: #002b5c;
+}
+.block-container {
+    padding: 0 3rem;
+}
+.stTextInput > div > div > input {
+    padding: 0.6rem;
+}
+input, textarea {
+    background-color: #ffffff !important;
+    color: #002b5c !important;
+    border: 1px solid #ccd6e0 !important;
+    border-radius: 6px !important;
+}
+.stChatInputContainer {display: flex; align-items: center;}
+.stChatInputContainer input {
+    flex: 1;
+    margin-right: 10px;
+}
+.send-button button {
+    background-color: #002b5c;
+    color: white;
+    font-weight: 600;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    border: none;
+}
+.send-button button:hover {
+    background-color: #004a99;
+}
+.chat-bubble {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    border-left: 4px solid #004080;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.user-bubble {
+    background-color: #dbeaff;
+    border-left-color: #0077cc;
+}
+</style>
 """, unsafe_allow_html=True)
 
-# ======= Secrets und Setup =======
+# Secrets
 OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY")
 AZURE_BLOB_CONN_STR = st.secrets.get("AZURE_BLOB_CONN_STR")
 AZURE_CONTAINER = st.secrets.get("AZURE_CONTAINER")
@@ -69,31 +67,30 @@ QDRANT_HOST = st.secrets.get("QDRANT_HOST")
 QDRANT_API_KEY = st.secrets.get("QDRANT_API_KEY")
 
 if not all([OPENAI_API_KEY, AZURE_BLOB_CONN_STR, AZURE_CONTAINER, QDRANT_HOST, QDRANT_API_KEY]):
-    st.error("❌ Fehlende API-Zugänge oder Secrets. Bitte in Streamlit Cloud konfigurieren.")
+    st.error("❌ Fehlende API-Zugänge oder Secrets.")
     st.stop()
 
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 pdf_processor = PDFProcessor()
 db = QdrantDB(api_key=OPENAI_API_KEY, host=QDRANT_HOST, qdrant_api_key=QDRANT_API_KEY)
 
-# ======= Sidebar – Sessions wie bei ChatGPT =======
-st.sidebar.header("\U0001F4C1 Deine Sessions")
+# Sidebar mit Session-Auswahl
+st.sidebar.header("📂 Sessions")
 if "sessions" not in st.session_state:
     st.session_state.sessions = {}
     st.session_state.active_session = None
 
 session_names = list(st.session_state.sessions.keys())
-selected = st.sidebar.selectbox("Session auswählen", session_names + ["➕ Neue starten"])
-
+selected = st.sidebar.selectbox("Session", session_names + ["➕ Neue starten"])
 if selected == "➕ Neue starten":
     st.session_state.active_session = None
 else:
     st.session_state.active_session = selected
 
-# ======= Hauptbereich =======
-st.title("Studienbot – Frage deine Unterlagen")
+st.title("Studienbot – Chat")
 
-with st.expander("📂 Neue PDFs prüfen & laden"):
+# PDF Expander oben
+with st.expander("📥 Neue PDFs laden"):
     if st.button("🔄 PDF-Sync starten"):
         with st.spinner("Lade PDFs von Azure..."):
             pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
@@ -111,15 +108,22 @@ with st.expander("📂 Neue PDFs prüfen & laden"):
         else:
             st.info("Keine neuen PDFs gefunden.")
 
-# ======= Chatverlauf und Eingabe =======
+# Chat-Ausgabe
 aktive_session = st.session_state.active_session
 if aktive_session and aktive_session in st.session_state.sessions:
     for eintrag in st.session_state.sessions[aktive_session]:
         st.markdown(f"<div class='chat-bubble user-bubble'><strong>🧑 Frage:</strong><br>{eintrag['frage']}</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='chat-bubble'><strong>🤖 Antwort:</strong><br>{eintrag['antwort']}</div>", unsafe_allow_html=True)
 
-frage = st.text_input("", placeholder="Stelle deine Frage zur FHDW oder zu Dokumenten...")
-if st.button("📤 Anfrage senden") and frage:
+# Eingabezeile mit Button in einer Zeile
+with st.container():
+    col1, col2 = st.columns([6, 1])
+    with col1:
+        frage = st.text_input("", placeholder="Deine Frage hier eingeben...")
+    with col2:
+        abschicken = st.button("Senden")
+
+if abschicken and frage:
     if not aktive_session:
         title = frage.strip()[:50]
         st.session_state.sessions[title] = []
