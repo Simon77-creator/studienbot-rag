@@ -1,4 +1,3 @@
-# azure_loader.py
 from azure.storage.blob import BlobServiceClient
 import os
 

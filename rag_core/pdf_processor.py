@@ -1,4 +1,3 @@
-# pdf_processor.py
 import os
 import fitz  # PyMuPDF
 import pdfplumber
@@ -7,7 +6,7 @@ import tiktoken
 class PDFProcessor:
     def extract_text_chunks(self, pdf_path, max_tokens=2000, overlap_tokens=50):
         chunks = []
-        enc = tiktoken.encoding_for_model("gpt-4")
+        enc = tiktoken.encoding_for_model("gpt-4o-mini")
 
         def paragraph_chunks(text):
             paragraphs = text.split("\n\n")
@@ -29,7 +28,7 @@ class PDFProcessor:
                 result.append(enc.decode(token_buffer))
             return result
 
-        # Text von PyMuPDF
+        # Text aus Seiten
         with fitz.open(pdf_path) as doc:
             for page_num, page in enumerate(doc):
                 text = page.get_text()
@@ -37,7 +36,7 @@ class PDFProcessor:
                 for chunk in paragraph_chunks(text):
                     chunks.append({"content": chunk, "metadata": metadata})
 
-        # Tabellen von pdfplumber
+        # Tabellen mit pdfplumber
         with pdfplumber.open(pdf_path) as pdf:
             for i, page in enumerate(pdf.pages):
                 tables = page.extract_tables()

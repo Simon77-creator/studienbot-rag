@@ -1,4 +1,3 @@
-# qdrant_db.py
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
 import uuid
@@ -60,3 +59,4 @@ class QdrantDB:
     def get_stored_sources(self):
         scroll = self.client.scroll(collection_name=self.collection, with_payload=True, limit=10000)
         return list(set(item.payload.get("source", "") for item in scroll[0] if item.payload))
+

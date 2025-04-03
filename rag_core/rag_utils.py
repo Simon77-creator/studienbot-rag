@@ -1,4 +1,3 @@
-# rag_utils.py
 import tiktoken
 import openai
 
@@ -7,7 +6,7 @@ def prepare_context_chunks(resultate, max_tokens=6500, max_chunk_length=2000, ma
     if resultate and "score" in resultate[0]:
         resultate = sorted(resultate, key=lambda x: x["score"])
 
-    enc = tiktoken.encoding_for_model("gpt-4o")
+    enc = tiktoken.encoding_for_model("gpt-4o-mini")
     total_tokens = 0
     context_chunks = []
     source_counter = {}
