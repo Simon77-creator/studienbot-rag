@@ -89,6 +89,8 @@ with st.sidebar.expander("⚙️ Einstellungen"):
 
 # Hauptbereich
 st.title("📘 Studienbot – Frag deine Dokumente")
+st.markdown("<p style='font-size:1.1rem; color:#334155;'>Dieser Chatbot hilft dir dabei, gezielt Fragen zu deinen Studienunterlagen zu stellen. Lade relevante PDFs hoch und erhalte präzise, kontextbasierte Antworten aus deinen Dokumenten.</p>", unsafe_allow_html=True)
+
 aktive_session = st.session_state.active_session
 if aktive_session and aktive_session in st.session_state.sessions:
     for eintrag in st.session_state.sessions[aktive_session]:
@@ -98,7 +100,7 @@ if aktive_session and aktive_session in st.session_state.sessions:
 # Chat Input unten
 frage_col, send_col = st.columns([8, 1])
 with frage_col:
-    frage = st.text_input("", placeholder="Was möchtest du wissen?", label_visibility="collapsed")
+    frage = st.text_input("Deine Frage:", placeholder="Was möchtest du wissen?")
 with send_col:
     abschicken = st.button("Senden")
 
@@ -128,5 +130,4 @@ if abschicken and frage:
 
     st.session_state.sessions[aktive_session].append({"frage": frage, "antwort": antwort})
     st.rerun()
-
 
