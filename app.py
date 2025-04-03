@@ -9,86 +9,72 @@ import uuid
 
 st.set_page_config(page_title="Studienbot", layout="wide")
 
-# 🎨 FHDW-inspiriertes dunkles Design
-fhdw_css = """
-<style>
-html, body, [class*="css"]  {
-    background-color: #0f1117;
-    color: #f0f4fc;
-    font-family: 'Segoe UI', sans-serif;
-}
-h1 {
-    color: #ffffff;
-    font-weight: 800;
-    font-size: 2.2rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 3px solid #004080;
-    margin-bottom: 1.5rem;
-}
-.stButton > button {
-    background-color: #004080;
-    color: white;
-    font-weight: 600;
-    padding: 0.5rem 1.5rem;
-    border: none;
-    border-radius: 5px;
-    transition: all 0.2s ease-in-out;
-}
-.stButton > button:hover {
-    background-color: #0059b3;
-    transform: scale(1.02);
-}
-input, textarea, .stTextInput, .stTextArea {
-    background-color: #1c1f26 !important;
-    color: #f0f4fc !important;
-    border: 1px solid #004080 !important;
-    border-radius: 4px !important;
-}
-details {
-    background-color: #1c1f26;
-    color: white;
-    border: 1px solid #004080;
-    border-radius: 5px;
-    padding: 0.4rem;
-}
-.stMarkdown {
-    background-color: #14161c;
-    color: #e0ecff;
-    border-left: 4px solid #004080;
-    padding: 1rem;
-    margin-top: 1rem;
-    border-radius: 6px;
-}
-[data-testid="stAlert"] {
-    background-color: #182030;
-    border-left: 6px solid #0077cc;
-    color: #f0f4fc;
-}
-hr {
-    border: none;
-    border-top: 1px solid #2a2e39;
-    margin: 1.5rem 0;
-}
-</style>
-"""
-st.markdown(fhdw_css, unsafe_allow_html=True)
+# ======= FHDW + ChatGPT Style CSS =======
+st.markdown("""
+    <style>
+    html, body, [class*="css"]  {
+        background-color: #f5f7fb;
+        font-family: 'Segoe UI', sans-serif;
+        color: #002b5c;
+    }
+    .block-container {
+        padding: 0 3rem;
+    }
+    h1 {
+        font-size: 1.9rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: #002b5c;
+    }
+    .stButton > button {
+        background-color: #002b5c;
+        color: white;
+        font-weight: 600;
+        padding: 0.6rem 1.2rem;
+        border: none;
+        border-radius: 6px;
+    }
+    .stButton > button:hover {
+        background-color: #004a99;
+        transform: scale(1.01);
+    }
+    input, textarea {
+        background-color: #ffffff !important;
+        color: #002b5c !important;
+        border: 1px solid #ccd6e0 !important;
+        border-radius: 6px !important;
+    }
+    .stTextInput > div > div > input {
+        padding: 0.6rem !important;
+    }
+    .chat-bubble {
+        background-color: #ffffff;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #004080;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .user-bubble {
+        background-color: #dbeaff;
+        border-left-color: #0077cc;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-st.title("Studienbot – Frage deine Unterlagen")
-
-# 🔐 Secrets laden
+# ======= Secrets und Setup =======
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 AZURE_BLOB_CONN_STR = st.secrets["AZURE_BLOB_CONN_STR"]
 AZURE_CONTAINER = st.secrets["AZURE_CONTAINER"]
 QDRANT_HOST = st.secrets["QDRANT_HOST"]
 QDRANT_API_KEY = st.secrets["QDRANT_API_KEY"]
 
-# 🔧 Services
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 pdf_processor = PDFProcessor()
 db = QdrantDB(api_key=OPENAI_API_KEY, host=QDRANT_HOST, qdrant_api_key=QDRANT_API_KEY)
 
-# 💬 Session Management
-st.sidebar.title("🗂️ Deine Sessions")
+# ======= Sidebar – Sessions wie bei ChatGPT =======
+st.sidebar.header("\U0001F4C1 Deine Sessions")
 if "sessions" not in st.session_state:
     st.session_state.sessions = {}
     st.session_state.active_session = None
@@ -101,62 +87,63 @@ if selected == "➕ Neue starten":
 else:
     st.session_state.active_session = selected
 
-# 📂 PDF-Upload Expander
-with st.expander("📂 Neue PDFs prüfen und laden"):
-    if st.button("🔄 Jetzt nach neuen PDFs suchen"):
-        with st.spinner("📥 Lade PDFs aus Azure..."):
+# ======= Hauptbereich =======
+st.title("Studienbot – Frage deine Unterlagen")
+
+with st.expander("📂 Neue PDFs prüfen & laden"):
+    if st.button("🔄 PDF-Sync starten"):
+        with st.spinner("Lade PDFs von Azure..."):
             pdf_paths = load_pdfs_from_blob(AZURE_BLOB_CONN_STR, AZURE_CONTAINER)
             stored_sources = db.get_stored_sources()
             new_pdfs = [p for p in pdf_paths if Path(p).name not in stored_sources]
 
         if new_pdfs and st.button(f"🚀 {len(new_pdfs)} neue PDFs verarbeiten"):
-            with st.spinner("⚙️ Verarbeite PDFs..."):
+            with st.spinner("Verarbeite PDFs..."):
                 all_chunks = []
                 for path in new_pdfs:
                     chunks = pdf_processor.extract_text_chunks(path)
                     all_chunks.extend(chunks)
                 db.add(all_chunks)
-                st.success(f"✅ {len(all_chunks)} Abschnitte gespeichert.")
+                st.success(f"✅ {len(all_chunks)} Chunks gespeichert.")
         else:
-            st.info("✅ Keine neuen PDFs vorhanden.")
+            st.info("Keine neuen PDFs gefunden.")
 
-# ❓ Frage stellen
-frage = st.text_input("❓ Deine Frage:", placeholder="Was möchtest du wissen?")
-fragen_knopf = st.button("📤 Anfrage senden")
+# ======= Chatverlauf und Eingabe =======
 
-if frage and fragen_knopf:
+if st.session_state.active_session and st.session_state.active_session in st.session_state.sessions:
+    for eintrag in st.session_state.sessions[st.session_state.active_session]:
+        st.markdown(f"<div class='chat-bubble user-bubble'><strong>🧑 Frage:</strong><br>{eintrag['frage']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='chat-bubble'><strong>🤖 Antwort:</strong><br>{eintrag['antwort']}</div>", unsafe_allow_html=True)
+
+frage = st.text_input("", placeholder="Stelle deine Frage zur FHDW oder zu Dokumenten...")
+if st.button("📤 Anfrage senden") and frage:
     if not st.session_state.active_session:
         title = frage.strip()[:50]
         st.session_state.sessions[title] = []
         st.session_state.active_session = title
 
     session_key = st.session_state.active_session
-    with st.spinner("🧠 Studienbot denkt nach..."):
-        resultate = db.query(frage, n=30)
-        kontext = prepare_context_chunks(resultate)
-        verlauf = st.session_state.sessions[session_key]
+    resultate = db.query(frage, n=30)
+    kontext = prepare_context_chunks(resultate)
+    verlauf = st.session_state.sessions[session_key]
 
-        verlaufszusammenfassung = summarize_session_history(
-            verlauf, max_tokens=800, model="gpt-4o-mini", api_key=OPENAI_API_KEY
-        )
+    verlaufszusammenfassung = summarize_session_history(
+        verlauf, max_tokens=800, model="gpt-4o-mini", api_key=OPENAI_API_KEY
+    )
 
-        messages = build_gpt_prompt(kontext, frage, verlaufszusammenfassung)
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-            temperature=0.3,
-            max_tokens=1500
-        )
-        antwort = response.choices[0].message.content
-        st.markdown(antwort)
-        st.session_state.sessions[session_key].append({"frage": frage, "antwort": antwort})
+    messages = build_gpt_prompt(kontext, frage, verlaufszusammenfassung)
+    response = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages,
+        temperature=0.3,
+        max_tokens=1500
+    )
+    antwort = response.choices[0].message.content
 
-# 📜 Verlauf anzeigen
-if st.session_state.active_session and st.checkbox("🕘 Verlauf anzeigen"):
-    st.markdown(f"### Verlauf: **{st.session_state.active_session}**")
-    for eintrag in reversed(st.session_state.sessions[st.session_state.active_session]):
-        st.markdown(f"**🧑 Frage:** {eintrag['frage']}")
-        st.markdown(f"**🤖 Antwort:** {eintrag['antwort']}")
-        st.markdown("---")
+    st.session_state.sessions[session_key].append({"frage": frage, "antwort": antwort})
+    st.rerun()
+
+# ======= Ende =======
+
 
 
