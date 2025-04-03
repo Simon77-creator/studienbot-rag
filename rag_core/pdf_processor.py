@@ -1,15 +1,15 @@
-import fitz
-import pdfplumber
+# pdf_processor.py
 import os
+import fitz  # PyMuPDF
+import pdfplumber
 import tiktoken
-from typing import List, Dict
 
 class PDFProcessor:
-    def extract_text_chunks(self, pdf_path: str, max_tokens=2000, overlap_tokens=50) -> List[Dict]:
+    def extract_text_chunks(self, pdf_path, max_tokens=2000, overlap_tokens=50):
         chunks = []
         enc = tiktoken.encoding_for_model("gpt-4")
 
-        def paragraph_chunks(text: str) -> List[str]:
+        def paragraph_chunks(text):
             paragraphs = text.split("\n\n")
             token_buffer = []
             current_tokens = 0
@@ -29,29 +29,25 @@ class PDFProcessor:
                 result.append(enc.decode(token_buffer))
             return result
 
-        try:
-            with fitz.open(pdf_path) as doc:
-                for page_num, page in enumerate(doc):
-                    text = page.get_text()
-                    metadata = {"source": os.path.basename(pdf_path), "page": page_num + 1}
-                    for chunk in paragraph_chunks(text):
-                        chunks.append({"content": chunk, "metadata": metadata})
-        except Exception as e:
-            print(f"Fehler bei Text in {pdf_path}: {e}")
+        # Text von PyMuPDF
+        with fitz.open(pdf_path) as doc:
+            for page_num, page in enumerate(doc):
+                text = page.get_text()
+                metadata = {"source": os.path.basename(pdf_path), "page": page_num + 1}
+                for chunk in paragraph_chunks(text):
+                    chunks.append({"content": chunk, "metadata": metadata})
 
-        try:
-            with pdfplumber.open(pdf_path) as pdf:
-                for i, page in enumerate(pdf.pages):
-                    tables = page.extract_tables()
-                    for table in tables:
-                        table_text = "\n".join([
-                            " | ".join([str(cell) if cell is not None else "" for cell in row])
-                            for row in table if row
-                        ])
-                        metadata = {"source": os.path.basename(pdf_path), "page": i + 1}
-                        for chunk in paragraph_chunks(table_text):
-                            chunks.append({"content": chunk, "metadata": metadata})
-        except Exception as e:
-            print(f"Fehler bei Tabellen in {pdf_path}: {e}")
+        # Tabellen von pdfplumber
+        with pdfplumber.open(pdf_path) as pdf:
+            for i, page in enumerate(pdf.pages):
+                tables = page.extract_tables()
+                for table in tables:
+                    table_text = "\n".join([
+                        " | ".join([str(cell) if cell else "" for cell in row])
+                        for row in table
+                    ])
+                    metadata = {"source": os.path.basename(pdf_path), "page": i + 1}
+                    for chunk in paragraph_chunks(table_text):
+                        chunks.append({"content": chunk, "metadata": metadata})
 
         return chunks

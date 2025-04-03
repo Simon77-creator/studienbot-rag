@@ -1,18 +1,21 @@
+# azure_loader.py
 from azure.storage.blob import BlobServiceClient
-from pathlib import Path
+import os
 
-def load_pdfs_from_blob(connection_str: str, container_name: str, download_dir="temp_pdfs") -> list[str]:
-    blob_service_client = BlobServiceClient.from_connection_string(connection_str)
-    container_client = blob_service_client.get_container_client(container_name)
-    Path(download_dir).mkdir(exist_ok=True)
-    downloaded_files = []
+def load_pdfs_from_blob(connection_string, container_name):
+    service = BlobServiceClient.from_connection_string(connection_string)
+    container = service.get_container_client(container_name)
 
-    for blob in container_client.list_blobs():
+    local_dir = "/tmp/azure_pdfs"
+    os.makedirs(local_dir, exist_ok=True)
+
+    paths = []
+    for blob in container.list_blobs():
         if blob.name.endswith(".pdf"):
-            file_path = Path(download_dir) / Path(blob.name).name
-            with open(file_path, "wb") as file:
-                stream = container_client.download_blob(blob.name)
-                file.write(stream.readall())
-            downloaded_files.append(str(file_path))
+            local_path = os.path.join(local_dir, os.path.basename(blob.name))
+            with open(local_path, "wb") as f:
+                data = container.download_blob(blob.name).readall()
+                f.write(data)
+            paths.append(local_path)
 
-    return downloaded_files
+    return paths
