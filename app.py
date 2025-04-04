@@ -15,7 +15,7 @@ st.markdown("""
 <style>
 html, body, [class*="css"]  {
     background-color: #0f1117 !important;
-    color: #ffffff;
+    color: #ffffff !important;
     font-family: 'Segoe UI', sans-serif;
 }
 .block-container {
@@ -23,6 +23,8 @@ html, body, [class*="css"]  {
     max-width: 768px;
     margin: auto;
 }
+
+/* Chatblasen */
 .chat-left, .chat-right {
     padding: 1rem;
     border-radius: 10px;
@@ -30,44 +32,61 @@ html, body, [class*="css"]  {
     display: inline-block;
     max-width: 90%;
     word-wrap: break-word;
+    font-size: 1rem;
+    line-height: 1.5;
 }
+
+/* Bot (links) */
 .chat-left {
-    background-color: #1e293b;
-    border-left: 4px solid #2563eb;
+    background-color: #1c1f26;           /* Sehr dunkles Grau für Dark Mode */
+    color: #ffffff;
+    border-left: 4px solid #1e90ff;      /* Akzent-Blau */
 }
+
+/* User (rechts) */
 .chat-right {
-    background-color: #334155;
-    border-right: 4px solid #2563eb;
+    background-color: #2563eb;          /* FHDW-Blau */
+    color: #ffffff;
+    border-right: 4px solid #1e90ff;
     margin-left: auto;
     text-align: right;
 }
+
+/* Eingabefeld */
 input[type="text"] {
     padding: 0.6rem;
     border-radius: 8px;
     border: 1px solid #334155;
     background-color: #1e1e24;
-    color: #fff;
+    color: #ffffff;
 }
+
+/* Button */
 button[kind="primary"] {
     background-color: #2563eb !important;
     color: white !important;
     border-radius: 8px !important;
     padding: 0.6rem 1.2rem !important;
 }
+
+/* Ladeanimation */
 .loading-bubble {
-    background-color: #1e293b;
+    background-color: #1c1f26;
+    color: #ffffff;
     padding: 1rem;
     border-radius: 10px;
-    border-left: 4px solid #2563eb;
+    border-left: 4px solid #1e90ff;
     max-width: 90%;
     display: inline-block;
     animation: pulse 1.5s infinite;
 }
+
 @keyframes pulse {
   0% { opacity: 0.2; }
   50% { opacity: 1; }
   100% { opacity: 0.2; }
 }
+
 .sidebar-title {
     font-size: 2rem;
     font-weight: bold;
@@ -77,6 +96,7 @@ button[kind="primary"] {
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 # ====== SECRETS & INIT ======
 def check_secrets():
