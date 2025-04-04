@@ -1,28 +1,23 @@
 import tiktoken
 import openai
 
+# Kontext vorbereiten aus Datenbankergebnissen
 def prepare_context_chunks(
     resultate,
     max_tokens=8000,
-    max_chunk_length=2000,
-    max_per_source=5,
-    allow_duplicates=False,
-    keyword_boost=["bachelor", "master", "spezialisierung", "vertiefung", "modul"]
+    max_chunk_length=1200,
+    max_per_source=3,
+    allow_duplicates=False
 ):
     seen_texts = set()
-    enc = tiktoken.encoding_for_model("gpt-4o-mini")
+    try:
+        enc = tiktoken.encoding_for_model("gpt-4o-mini")
+    except:
+        enc = tiktoken.get_encoding("cl100k_base")
+
     total_tokens = 0
     context_chunks = []
     source_counter = {}
-
-    def boost_score(text):
-        lowered = text.lower()
-        return sum(1 for kw in keyword_boost if kw in lowered)
-
-    if resultate and "score" in resultate[0]:
-        for r in resultate:
-            r["boost"] = boost_score(r["text"])
-        resultate = sorted(resultate, key=lambda x: (x["score"] - x["boost"] * 0.1))
 
     for r in resultate:
         source = r["source"]
@@ -49,6 +44,8 @@ def prepare_context_chunks(
 
     return context_chunks
 
+
+# Fragetyp erkennen
 def detect_question_type(frage: str) -> str:
     frage_lower = frage.lower()
     if any(kw in frage_lower for kw in ["unterschied", "vergleich", "vs", "besser als", "besser geeignet"]):
@@ -60,6 +57,8 @@ def detect_question_type(frage: str) -> str:
     else:
         return "allgemein"
 
+
+# GPT Prompt zusammenbauen
 def build_gpt_prompt(context_chunks, frage, verlaufszusammenfassung=""):
     frage_typ = detect_question_type(frage)
 
@@ -87,6 +86,8 @@ def build_gpt_prompt(context_chunks, frage, verlaufszusammenfassung=""):
         {"role": "user", "content": frage}
     ]
 
+
+# Verlauf zusammenfassen mit GPT
 def summarize_session_history(history, max_tokens=800, model="gpt-4o-mini", api_key=None):
     if not history or not api_key:
         return ""
